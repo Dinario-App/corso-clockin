@@ -79,8 +79,8 @@ export function resolveReturningNoteLayout(input: {
 type QuietFrame = { scale: number; dx: number; dy: number };
 
 /**
- * The Pari mark at the Frame 1 lift (`QUIET_MARK_GET_STARTED`), placed on the
- * device by the artboard's cover transform: a box whose ink is `drawnWidth`
+ * The Pari mark at the Get Started lift (`QUIET_MARK_GET_STARTED`), scaled to
+ * cover the device frame: a box whose ink is `drawnWidth`
  * wide, centred on the target. Pari ink is a share of its box
  * (`PARI_MARK_INK`), unlike the old Corso mark `placeQuietMark` assumes.
  */
@@ -101,7 +101,7 @@ export function placeReturningNoteMark(frame: QuietFrame): {
   };
 }
 
-/** The headline's top on the device: Frame 1's line (`QUIET_HEADLINE_TOP`). */
+/** The headline's top on the device: the Welcome screen's line (`QUIET_HEADLINE_TOP`). */
 export function resolveReturningNoteHeadlineTop(frame: QuietFrame): number {
   return frame.dy + QUIET_HEADLINE_TOP * frame.scale;
 }

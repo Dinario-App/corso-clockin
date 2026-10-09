@@ -6,8 +6,8 @@ export const BACKPACK_SECURITIES_HARD_DENY_COUNTRIES = [
 ] as const;
 
 /**
- * EEA contracting parties: the EU 27 plus Iceland, Liechtenstein, and
- * Norway. Switzerland is not a party. Membership is the list itself.
+ * Country codes grouped as the EEA for this check. Membership is the list
+ * itself.
  */
 export const BACKPACK_EEA_COUNTRIES: readonly string[] = [
   'AT',
@@ -87,12 +87,9 @@ export const BACKPACK_TERRITORY_PARENT: Readonly<Record<string, string>> = {
 };
 
 /**
- * Officially assigned ISO 3166-1 alpha-2 codes this module has placed
- * outside the hard-deny set and the EEA. Territory codes above are
- * absent. SJ (Svalbard and Jan Mayen) and BV (Bouvet Island) are
- * officially assigned and absent: this module cannot place either
- * code outside the EEA. Anything not in this list, the deny lists, or
- * the territory map is unreadable.
+ * ISO 3166-1 alpha-2 codes this module treats as outside the lists above.
+ * A code in none of those lists, and not in the territory map, is
+ * unreadable.
  */
 export const BACKPACK_PLACED_OUTSIDE_COUNTRIES: readonly string[] = [
   'AD',

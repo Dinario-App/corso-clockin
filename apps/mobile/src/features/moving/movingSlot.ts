@@ -2,7 +2,7 @@ import { spacing } from '@/src/ui/tokens';
 
 /**
  * 44 is the tap floor. It is `height`, not `minHeight`, and that is load-
- * bearing for defect 2: the viewport arithmetic below floors a measured height
+ * bearing: the viewport arithmetic below floors a measured height
  * to a whole number of rows, and a row that could be taller than it claims
  * would make that arithmetic a guess.
  *
@@ -18,7 +18,7 @@ export const MOVING_ROW_HEIGHT = 44;
  * ⚠️ Deliberately explicit. If the label's height came from font metrics, the
  * reserved height and the rendered height would agree only as long as Inter
  * loaded at the moment both were computed — and a font that swaps in late is
- * exactly the "~1-2s after Home paints" window defect 1 lives in. A pinned line
+ * exactly the "~1-2s after Home paints" window where the height would shift. A pinned line
  * box makes the two heights equal by construction instead of by luck.
  */
 export const MOVING_LABEL_LINE_HEIGHT = 16;

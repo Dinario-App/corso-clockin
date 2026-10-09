@@ -74,7 +74,7 @@ export const movingStripStyles: {
     fontWeight: '400',
     // ⚠️ Pinned, not inherited. If this came from font metrics the reserved
     // height and the rendered height would agree only while Inter was loaded,
-    // and a late font swap lands squarely in defect 1's window.
+    // and a late font swap would change the measured height.
     lineHeight: MOVING_LABEL_LINE_HEIGHT,
   },
   context: {

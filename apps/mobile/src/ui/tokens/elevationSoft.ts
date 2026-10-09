@@ -1,6 +1,6 @@
 import type { BoxShadowValue, ViewStyle } from 'react-native';
 
-/** Canvas `#0C0B0A` @ 8%. Paper leftover was `#1C1C1C14`. */
+/** Soft shadow colour: canvas `#0C0B0A` @ 8%. */
 export const ELEVATION_SOFT_COLOR = '#0C0B0A14' as const;
 
 export const ELEVATION_SOFT_OFFSET_X = 0 as const;

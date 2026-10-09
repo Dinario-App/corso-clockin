@@ -70,7 +70,7 @@ export function resolveArcState(check: {
 
 /* ─── Geometry ────────────────────────────────────────────────────────────── */
 
-/** The three places the ring is drawn, with the pack's own sizes. */
+/** The three places the ring is drawn, with their sizes. */
 export const READ_RING_SIZE = Object.freeze({
   /** On the verdict card, beside the word. */
   card: Object.freeze({ size: 46, stroke: 3.2 }),
@@ -160,7 +160,7 @@ export function resolveReadRingArcs(input: {
   });
 }
 
-/** The centre dot's radius, per the pack: `max(3.5, size × .09)`. */
+/** The centre dot's radius: `max(3.5, size × .09)`. */
 export function resolveCentreDotRadius(size: number): number {
   return round2(Math.max(3.5, size * 0.09));
 }

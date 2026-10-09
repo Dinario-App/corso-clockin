@@ -1,3 +1,7 @@
+/**
+ * Visual system for this app. "Ethena" is an internal code name, not the
+ * Ethena protocol.
+ */
 import {
   accent as grokAccent,
   marketCaution as marketCautionAmber,
@@ -20,7 +24,7 @@ export const CREST = '#12171E';
 export const CREST_RGB = '108, 140, 190';
 
 export const ICY_1 = '#A9C9F9';
-/** ...to y=1290 (bottom). Ethena's ONLY saturated fill. */
+/** ...to y=1290 (bottom). The visual system's only saturated fill. */
 export const ICY_2 = '#7F96BA';
 /** The label on the icy pill reads near-black. */
 export const ON_ICY = '#0A0F17';

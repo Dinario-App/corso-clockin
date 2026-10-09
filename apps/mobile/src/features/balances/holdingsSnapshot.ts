@@ -31,7 +31,7 @@ export type BuildHoldingsSnapshotArgs = {
   scope?: HoldingsSnapshot['scope'];
   /**
    * Extra lines (e.g. Autopilot pot) — typically `includeInHomeTotal: false`.
-   * Preserved for later Grid pot without enabling Grid in this slice.
+   * Kept for a later Grid pot; Grid itself is not enabled.
    */
   additionalLines?: HoldingLine[];
 };

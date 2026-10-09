@@ -1174,7 +1174,7 @@ export const copy = {
     vendorOpenai: 'OpenAI',
     vendorAnthropic: 'Anthropic',
     vendorXai: 'xAI',
-    /** Model names, one per connected credential. Pinned to `pins.BYOK`. */
+    /** Model names, one per connected credential. */
     modelNameOpenai: 'GPT-5',
     modelNameAnthropic: 'Claude Sonnet 5',
     modelNameXai: 'Grok 4',

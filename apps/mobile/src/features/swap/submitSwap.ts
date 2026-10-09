@@ -403,7 +403,7 @@ export async function submitSwap(args: {
       // No second client-side confirmation here. The API's `landed` IS an
       // on-chain `getSignatureStatuses` read, so re-polling could only add a
       // failure mode — a device on flaky wifi turning a proven-landed swap into
-      // a false "failed", which is the exact outcome this slice exists to
+      // a false "failed", which is the exact outcome this check exists to
       // prevent. Anything the API could not prove arrived as
       // SwapLandUncertainError above.
       return {

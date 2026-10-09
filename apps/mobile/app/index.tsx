@@ -10,7 +10,7 @@ import { colors } from '@/constants/theme';
 import { useCorsoSession } from '@/src/features/session/SessionContext';
 import { getSessionDestination } from '@/src/features/session/sessionGate';
 
-/** Root redirect — Welcome (Frame 0/1) when unsigned; lock-setup or Home when signed. */
+/** Root redirect — Welcome when unsigned; lock-setup or Home when signed. */
 export default function RootIndex() {
   const { phase, session, needsLockSetup, locked, privyRestoreState, retrySessionRestore } =
     useCorsoSession();

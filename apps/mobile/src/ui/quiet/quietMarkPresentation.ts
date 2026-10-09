@@ -75,7 +75,7 @@ export function resolveQuietCanvas(
   return CANVAS[variant];
 }
 
-/** Share of the rim the lit spot sits up and left of centre (Frame 0 read). */
+/** Share of the rim the lit spot sits up and left of centre. */
 export const BLOOM_LIFT = 0.2;
 
 export function resolveBloomGlow(bloom: QuietBloom) {

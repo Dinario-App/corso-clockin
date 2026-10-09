@@ -12,7 +12,7 @@ export const FIRST_RUN_ROUTES: Record<
 
 let pending = false;
 
-/** Welcome Frame 1 records which button was pressed. */
+/** The Welcome screen records which button was pressed. */
 export function recordFirstRunIntent(intent: FirstRunIntent): void {
   pending = intent === 'new';
 }

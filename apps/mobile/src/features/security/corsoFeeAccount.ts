@@ -13,9 +13,7 @@ export function isReviewedCorsoFeeBps(value: unknown): value is number {
  * Pinned config env var naming the Corso fee authority (base58 pubkey).
  * The fee ATAs are the ATAs of this authority for each output mint.
  *
- * OPEN QUESTION (surfaced, not answered by this slice): which key this is,
- * where the secret lives, and the sweep runbook. Until it is provisioned this
- * returns null and every charged swap fails closed.
+ * Until it is set, this returns null and every charged swap fails closed.
  */
 export const CORSO_FEE_AUTHORITY_ENV = 'EXPO_PUBLIC_CORSO_FEE_AUTHORITY';
 

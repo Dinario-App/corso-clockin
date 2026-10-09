@@ -49,9 +49,9 @@ export const colors = {
   destructive: '#DD6E76',
   /** Glyph / label on a `destructive` fill. */
   onDestructive: '#1F0709',
-  /** Leftover nav token — carries a label, so it is body copy (`muted`). */
+  /** Inactive navigation label. It carries text, so it uses body copy (`muted`). */
   navInactive: GREY2,
-  /** Legacy glass names, re-pointed onto the ladder. */
+  /** Glass fills, pointed at the current ink ladder. */
   glassFill: 'rgba(255, 255, 255, 0.08)',
   glassStroke: 'rgba(255, 255, 255, 0.10)',
   glassFillPressed: '#181818',
@@ -182,7 +182,7 @@ export const typography = {
   title: 22,
   body: 17,
   caption: 13,
-  /** Quiet line under the dollar — Home / Money “you hold this”. Frame 14. */
+  /** Quiet line under the dollar — Home / Money “you hold this”. */
   hold: 14,
   amount: 32,
   micro: 11,
