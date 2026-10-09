@@ -1,0 +1,47 @@
+export const SWAP_ROUTER_ALLOWLIST = new Set([
+  'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4',
+  'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB',
+  'JUP3c2Uh3WA4Ng34tw6kPd2G4C5BB21Xo36Je1s32Ph',
+]);
+
+export const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+export const TOKEN_2022_PROGRAM_ID =
+  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+export const ASSOCIATED_TOKEN_PROGRAM_ID =
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+export const COMPUTE_BUDGET_PROGRAM_ID =
+  'ComputeBudget111111111111111111111111111111';
+export const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
+
+/** Known DEX / venue programs Jupiter Meta commonly invokes. */
+const DEX_VENUE_ALLOWLIST = new Set([
+  // Raydium
+  '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
+  'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',
+  'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
+  'routeUGWgWgjKNVE4kvWbQjnxcNu6f7knbMoWJiz1xRM',
+  'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
+  '9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP',
+  // Meteora
+  'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo',
+  'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB',
+  'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGg',
+  // Phoenix / OpenBook
+  'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY',
+  'opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb',
+  'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX',
+  // Lifinity / SolFi-ish
+  '2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c',
+  'SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe',
+]);
+
+export const SWAP_SUPPORT_PROGRAM_ALLOWLIST = new Set([
+  ...SWAP_ROUTER_ALLOWLIST,
+  ...DEX_VENUE_ALLOWLIST,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  COMPUTE_BUDGET_PROGRAM_ID,
+  SYSTEM_PROGRAM_ID,
+  'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr',
+]);

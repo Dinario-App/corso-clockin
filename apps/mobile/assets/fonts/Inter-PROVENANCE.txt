@@ -1,0 +1,25 @@
+Inter font family (variable + static TTF weights)
+Source: https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
+Version: 4.1
+Licence: SIL Open Font License 1.1 (see Inter-LICENSE.txt, byte-identical to the release's LICENSE.txt)
+Bundled locally, so the app makes no runtime network font download.
+
+PRIMARY
+  InterVariable.ttf   <zip>/InterVariable.ttf
+    sha256 4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf
+    Registered as the primary family so a numeric fontWeight resolves against
+    the weight axis.
+
+WORDMARK
+  Inter-Black.ttf     <zip>/extras/ttf/Inter-Black.ttf   weight 900
+    sha256 6342d3ea6dc088b43867f615e807d898adf100c93edb978b8e52c5eb71a264da
+
+STATIC FALLBACK (used when the variable-weight path is off)
+  Inter-Regular.ttf   <zip>/extras/ttf/Inter-Regular.ttf    weight 400
+    sha256 40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82
+  Inter-Medium.ttf    <zip>/extras/ttf/Inter-Medium.ttf     weight 500
+    sha256 97ad806f526e41546d46365bb3a393145f75b7b1568913db74549ad8b8dba872
+  Inter-SemiBold.ttf  <zip>/extras/ttf/Inter-SemiBold.ttf   weight 600
+    sha256 78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3
+  Inter-Bold.ttf      <zip>/extras/ttf/Inter-Bold.ttf       weight 700
+    sha256 288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f

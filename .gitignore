@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Expo / Metro
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native build output
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.apk
+*.aab
+*.ipa
+
+# Signing material
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+!apps/mobile/certs/certificate.pem
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs / caches
+*.log
+coverage/
+.turbo/
+*.tsbuildinfo

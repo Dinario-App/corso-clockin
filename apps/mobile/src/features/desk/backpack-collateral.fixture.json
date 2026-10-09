@@ -1,0 +1,723 @@
+{
+  "fetchedAt": "2026-09-25T14:34:01Z",
+  "request": {
+    "method": "GET",
+    "url": "https://api.backpack.exchange/api/v1/collateral",
+    "authenticated": false
+  },
+  "httpStatus": 200,
+  "body": [
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.75",
+          "positiveCurvePenalty": "0.002",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.00048",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.000288",
+        "type": "sqrt"
+      },
+      "symbol": "SUI"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.0024",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.0006",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "symbol": "DOGE"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "type": "identity"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.035",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0175",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "symbol": "USDC"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "MU.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.95",
+          "positiveCurvePenalty": "0.0003",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.125",
+        "factor": "0.00024",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0625",
+        "factor": "0.000144",
+        "type": "sqrt"
+      },
+      "symbol": "BTC"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "SNDK.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.0025",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.1",
+        "factor": "0.0006",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.05",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "symbol": "ZEC"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.2",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.1",
+        "factor": "0.000216",
+        "type": "sqrt"
+      },
+      "symbol": "HYPE"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "SPCX.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.25",
+          "positiveCurvePenalty": "0.016",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1000",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "9999",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "symbol": "JUP"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.95",
+          "positiveCurvePenalty": "0.0001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.125",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0625",
+        "factor": "0",
+        "type": "sqrt"
+      },
+      "symbol": "USDT"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.004",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.0006",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "symbol": "XPL"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.0024",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.0006",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "symbol": "SEI"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.004",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.00048",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.000288",
+        "type": "sqrt"
+      },
+      "symbol": "MON"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.0024",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.0006",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "symbol": "APT"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.95",
+          "positiveCurvePenalty": "0.0004",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.125",
+        "factor": "0.00024",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0625",
+        "factor": "0.000144",
+        "type": "sqrt"
+      },
+      "symbol": "SOL"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.2",
+        "factor": "0.00036",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.1",
+        "factor": "0.000216",
+        "type": "sqrt"
+      },
+      "symbol": "BNB"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.8",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.3",
+        "factor": "0.00048",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.15",
+        "factor": "0.000288",
+        "type": "sqrt"
+      },
+      "symbol": "XRP"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.8",
+          "positiveCurvePenalty": "0.0004",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.125",
+        "factor": "0.00024",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0625",
+        "factor": "0.000144",
+        "type": "sqrt"
+      },
+      "symbol": "PAXG"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.95",
+          "positiveCurvePenalty": "0.0004",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "0.125",
+        "factor": "0.00024",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.0625",
+        "factor": "0.000144",
+        "type": "sqrt"
+      },
+      "symbol": "ETH"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.00075",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "SPY.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "GOOGL.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "META.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "INTC.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.7",
+          "positiveCurvePenalty": "0.00075",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "QQQ.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "NVDA.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "AAPL.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "TSLA.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "AMZN.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.6",
+          "positiveCurvePenalty": "0.001",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "AMD.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "HOOD.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "CRCL.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "DRAM.US"
+    },
+    {
+      "haircutFunction": {
+        "kind": {
+          "base": "0.5",
+          "positiveCurvePenalty": "0.0015",
+          "type": "inverseSqrt"
+        },
+        "weight": "1"
+      },
+      "imfFunction": {
+        "base": "1",
+        "factor": "0.001",
+        "type": "sqrt"
+      },
+      "mmfFunction": {
+        "base": "0.5",
+        "factor": "0.0005",
+        "type": "sqrt"
+      },
+      "symbol": "SKHY.US"
+    }
+  ]
+}

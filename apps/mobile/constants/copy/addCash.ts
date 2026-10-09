@@ -1,0 +1,16 @@
+export const addCashCopy = {
+  rowYouPay: 'You pay',
+  rowProviderFee: 'MoonPay fee',
+  rowNetworkFee: 'Network fee',
+  rowLands: 'You get',
+  minimum: 'Minimum',
+  maximum: 'Maximum',
+  title: 'Add cash',
+  chipOther: 'Other',
+  quoteFallback: 'MoonPay shows the final price before you pay.',
+  finePrint: "Arrival time depends on how you pay and on MoonPay's checks.",
+  review: 'Review',
+  offline: "Couldn't load this right now. Try again.",
+  amountLabel: 'Amount in USD',
+  close: 'Close Add cash',
+} as const;

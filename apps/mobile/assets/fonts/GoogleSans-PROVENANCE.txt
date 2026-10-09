@@ -1,0 +1,21 @@
+Google Sans Medium — the Sign in with Google button label face
+Why: Google's branding guidelines specify it for a custom button ("The button
+font is Google Sans Medium"; dark theme Font: #E3E3E3 | Google Sans Medium |
+14/20). https://developers.google.com/identity/branding-guidelines#font
+(live curl 2026-09-29 23:39:32 EDT, HTTP 200). The page links the family at
+https://fonts.google.com/specimen/Google+Sans.
+
+Source: Google's official release,
+https://github.com/googlefonts/googlesans/releases/download/v14.000/GoogleSans-v14.000.zip
+(fetched 2026-09-29 23:40:24 EDT, HTTP 200, sha256 d338f0e74f5eabead86a85b87edf4cc50cd6561196dbe173d1db4139e95b3ca7).
+File: <zip>/build/GoogleSans/android/static/GoogleSans-Medium.ttf, UNMODIFIED
+(the release's Android static build), sha256 654567c75cc0eac0567ed0e5e6f8c1ea88f2ffd397a10889e88857bd9c2e0e23.
+
+Licence: SIL Open Font License 1.1, GoogleSans-OFL.txt (byte-identical to
+google/fonts ofl/googlesans/OFL.txt). No Reserved Font Name. Trademark terms:
+GoogleSans-TRADEMARKS.md — "Google Sans" may be used only with the ORIGINAL
+font software, which is why this file ships unmodified (no subset, no
+instance, no rename).
+
+Used by: src/ui/auth/ProviderSignInButtons.tsx (the Google label only).
+Registered in: src/theme/interFontMap.ts as 'GoogleSans-Medium'.

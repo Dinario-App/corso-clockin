@@ -1,0 +1,25 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production-seeker": {
+      "channel": "production-seeker",
+      "environment": "production",
+      "credentialsSource": "remote",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "CORSO_FLAVOR": "seeker",
+        "CORSO_SEEKER_TRACK": "production",
+        "EXPO_PUBLIC_FLAG_BOTS": "0",
+        "EXPO_PUBLIC_FLAG_SENTRY": "1",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a071b58a4f1655744fe66aab04503d48@o4510568403959808.ingest.us.sentry.io/4511900896002048"
+      }
+    }
+  }
+}

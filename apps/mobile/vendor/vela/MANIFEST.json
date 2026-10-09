@@ -1,0 +1,14 @@
+{
+  "package": "@luxalgo/vela",
+  "version": "0.6.17",
+  "license": "Apache-2.0",
+  "file": "dist/vela.global.min.js",
+  "upstreamSha256": "7a4bcb1f8c668585f0c61608ba6e335db8feec3ecf223ea5c403b8329ccb4476",
+  "upstreamBytes": 849830,
+  "sha256": "06bb722e876c0078413de5f3e9a8a0329232c68261bb57506118c5c9a6e4e6c7",
+  "bytes": 849353,
+  "modifications": [
+    "blanked 11 unused provider URL literals",
+    "trimmed the \"no scripting engine\" hint that referenced a separate package"
+  ]
+}
