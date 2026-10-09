@@ -41,7 +41,7 @@ export type PublicAppConfig = {
     jurisdictionGateEnabled: boolean;
     /**
      * TokenFacts kill switch (API FLAG_TOKEN_FACTS → flags.tokenFactsEnabled).
-     * Fail-closed until the API explicitly serves true (G-08 default off).
+     * Fail-closed: off until the API explicitly serves true.
      */
     tokenFactsEnabled: boolean;
     /** Watch-only routines are absent unless the API explicitly serves true. */

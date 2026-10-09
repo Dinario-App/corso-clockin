@@ -1,5 +1,5 @@
 /**
- * Asset detail TokenFacts glue (G-08/G-09).
+ * Asset detail TokenFacts glue: the token facts panel on the asset detail screen.
  * Route validation and display composition only; no navigation authority.
  */
 import { PublicKey } from '@solana/web3.js';

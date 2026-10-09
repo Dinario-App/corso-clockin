@@ -385,7 +385,7 @@ export default function SwapScreen() {
   const alertAutoReview = useRef(false);
   /** The quote the automatic Review waits for: when it was asked and for which trade. */
   const alertQuoteRequest = useRef<{ startedAtMs: number; trade: string } | null>(null);
-  /** The trade the alert opened on Review. W-13/W-14 show only while Review still holds it. */
+  /** The trade the alert opened on Review. The alert arrival and price-moved lines show only while Review still holds it. */
   const [alertArrivalTrade, setAlertArrivalTrade] = useState<string | null>(null);
   const askSourceTextForLifetime = useRef(readAskSourceTextForSwap()).current;
   const routineFireForLifetime = useRef(readRoutineFireForSwap()).current;

@@ -41,7 +41,7 @@ function apiBaseUrl(): string | null {
 let cachedOptOut: boolean | null = null;
 
 /**
- * F-6 Option B: true when the user has withdrawn analytics.
+ * True when the user has turned analytics off.
  * Default is false (analytics on) until they opt out.
  */
 export async function isAnalyticsOptedOut(): Promise<boolean> {

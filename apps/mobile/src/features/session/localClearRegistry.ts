@@ -408,7 +408,7 @@ export const DEVICE_SCOPED_KEYS = Object.freeze([
     key: '@corso/analytics/optOut',
     writer: 'src/lib/analyticsPreference.ts',
     reason:
-      'the device-local analytics choice (F-6 Option B); clearing it would silently turn analytics back on',
+      'the device-local analytics opt-out; clearing it would silently turn analytics back on',
   },
   {
     key: '@corso/disclosures/lastKnownGood/v1',

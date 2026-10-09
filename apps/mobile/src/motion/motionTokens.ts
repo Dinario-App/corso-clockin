@@ -59,7 +59,7 @@ export const GENERIC_MOTION_TRANSITION = {
 export type GenericMotionTransitionId =
   (typeof GENERIC_MOTION_TRANSITION)[keyof typeof GENERIC_MOTION_TRANSITION];
 
-/** Dedicated resolvers only — excluded from resolveTransitionMotion (M-06, M-07, M-08, M-10). */
+/** Transitions with their own resolvers; resolveTransitionMotion does not handle them. */
 export const DEDICATED_MOTION_TRANSITION = {
   flipPayReceive: 'flipPayReceive',
   skeletonShimmer: 'skeletonShimmer',

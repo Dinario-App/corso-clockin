@@ -1078,7 +1078,7 @@ export const copy = {
       done: 'Removed from this phone',
     },
     aboutEmailSupport: 'Email support@corso.trade',
-    /** F-6 Option B — analytics on by default; plain-language withdrawal control. */
+    /** Analytics are on by default; this section is the plain-language control to turn them off. */
     privacySection: 'Privacy',
     analyticsTitle: 'Anonymous usage data',
     analyticsBody:
@@ -1089,7 +1089,7 @@ export const copy = {
       'When off, new analytics events stop immediately. Events already sent are not deleted.',
     biometricsUnavailable: "Biometrics aren't available on this device.",
     errorSetting: "Couldn't save that setting. Try again.",
-    /** F-16 — quote this ID when emailing support@corso.trade to delete analytics events. */
+    /** The user quotes this ID when emailing support@corso.trade to delete analytics events. */
     installIdLabel: 'Install ID',
     installIdHelp:
       'Use this ID if you email support@corso.trade (subject: Delete my data) to delete analytics events for this install. It is not your wallet address.',

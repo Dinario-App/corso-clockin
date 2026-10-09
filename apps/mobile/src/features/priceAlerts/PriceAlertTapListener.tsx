@@ -20,7 +20,7 @@ type Pending = {
   tappedAtMs: number;
 };
 type NotificationsModule = typeof import('expo-notifications');
-// W-22 / W-23 carry no title. The one button reuses an approved, shipped
+// The alert-tap notices carry no title. The one button reuses an approved, shipped
 // dismiss label (`copy.import.dismiss`, the recovery-phrase screenshot
 // notice) so the OS never supplies its own word.
 function notice(message: string) {
