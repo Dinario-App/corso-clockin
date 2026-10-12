@@ -1,8 +1,19 @@
 # Corso: CLOCK IN snapshot
 
-Corso is a trading desk for everyday traders on Solana. You can see your holdings, look up a token before you swap it, swap, and set price alerts. Corso runs on Android, including the Solana Seeker.
+Corso is a wealth app on Solana. You build your own portfolio, starting with cash and crypto, and Corso never holds your money. Every coin on Corso's list has a page with the live price, the key facts and a plain-English read of the risk, so you see the real data before you put a dollar in. Then you choose Buy or Wait. Nothing moves until you confirm. Corso runs on Android, including the Solana Seeker, where you can connect your wallet with Mobile Wallet Adapter.
 
-This repository is a single-commit snapshot of the Corso Android app and the shared packages it uses, cut for CLOCK IN judging from the same source commit as the submitted APK.
+## How to try Corso
+
+1. **Install.** If an older Corso or Dinario test build is on the phone, uninstall it first. Then download the APK from the link in our submission and open it.
+2. **Sign in with email.** We send you a 6-digit code. You can turn on Fingerprint or a passcode, or tap Not now.
+3. **Build your portfolio.** Pick what goes in. This only saves your plan, and no money moves.
+4. **Look around.** Home shows your Cash and your Crypto. Open a coin to see the price, the facts and a plain read of the risk, then Buy or Wait.
+5. **Where you are matters.** Buying and selling work only in the US, not in New York, and only when the app can confirm where you are. Everywhere else you can sign in and look around.
+6. **Connect a wallet (optional).** Profile, then Security, then Connect wallet. You need a wallet app on the phone that supports Solana Mobile Wallet Adapter. Corso shows that wallet's address. Trading isn't available for connected wallets.
+
+## About this snapshot
+
+This repository is a source snapshot of the Corso Android app and the shared packages it uses, cut for CLOCK IN judging from the same source commit as the submitted APK.
 
 Compared with that commit, the app's code is unchanged apart from comments and whitespace, with the exceptions listed under "Differences from the submitted build" below. Tests, test fixtures and internal tooling are not included, because they are not needed to build or run the app. Three files whose names still say "fixture" are bundled display data that the app uses at runtime, not test fixtures: `apps/mobile/src/features/desk/backpack-collateral.fixture.json` (desk screen), `apps/mobile/src/features/tokens/tokenIconFixture.json` (token icons) and `apps/mobile/src/features/howItWorks/howItWorksFixtures.ts` (the How it works screens).
 
