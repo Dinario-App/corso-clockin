@@ -5,7 +5,7 @@ Corso is a wealth app on Solana. You build your own portfolio, starting with cas
 ## How to try Corso
 
 1. **Install.** If an older Corso or Dinario test build is on the phone, uninstall it first. Then download the APK from the link in our submission and open it.
-2. **Sign in with email** (or Google). We email you a 6-digit code. You can turn on Fingerprint or a passcode, or tap Not now.
+2. **Sign in.** Use your email (we send you a 6-digit code) or Google. You can turn on Fingerprint or a passcode, or tap Not now.
 3. **Pick a coin to start.** Next you choose how much, or tap Skip for now. Nothing moves until you confirm.
 4. **Look around.** Home shows your Cash and your Crypto. Open a coin to see the price, the facts and a plain read of the risk, then Buy or Wait.
 5. **Where you are matters.** Buying and selling work only in the US, not in New York, and only when the app can confirm where you are. Everywhere else you can sign in and look around.
