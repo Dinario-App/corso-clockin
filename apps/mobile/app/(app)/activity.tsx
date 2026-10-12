@@ -25,6 +25,15 @@ import {
   resolveActivityFeedGroups,
 } from '@/src/features/activity/activityFeedPresentation';
 import { useWalletActivity } from '@/src/features/activity/useWalletActivity';
+import { activityValuesLine } from '@/src/features/activity/activityFiat';
+import {
+  PRICE_QUOTES_REFRESH_MS,
+  usePriceQuotes,
+} from '@/src/features/balances/usePriceQuotes';
+import {
+  useOnReconnect,
+  useReadFailState,
+} from '@/src/features/connectivity/useConnectivity';
 import { useActivityRowLabels } from '@/src/features/activity/useActivityRowLabels';
 import { maskActivityFeedRow } from '@/src/features/balances/hideBalances';
 import { useHideBalances } from '@/src/features/balances/hideBalancesPreference';
@@ -68,21 +77,42 @@ export default function ActivityRoot() {
   const activity = useWalletActivity(session?.address);
   const labelsFor = useActivityRowLabels(activity.items, session?.address);
   const hideBalances = useHideBalances();
+  const prices = usePriceQuotes({ refreshIntervalMs: PRICE_QUOTES_REFRESH_MS });
   const insets = useSafeAreaInsets();
   const { reduceMotion } = useAccessibilityPreference();
   const [pulledAtMs, setPulledAtMs] = useState(() => Date.now());
+  const failState = useReadFailState();
+  useOnReconnect(() => {
+    setPulledAtMs(Date.now());
+    void activity.refresh();
+  });
 
   const chrome = resolveActivityFeedChrome({
     status: activity.status,
     itemCount: activity.items.length,
     hasAddress: Boolean(session?.address),
+    failState,
   });
   // Relative times are pinned to the last fetch so the list never re-renders
   // on a clock; a pull re-reads both the rows and "now".
   const groups = useMemo(
-    () => resolveActivityFeedGroups(activity.items, pulledAtMs, labelsFor),
-    [activity.items, pulledAtMs, labelsFor],
+    () =>
+      resolveActivityFeedGroups(
+        activity.items,
+        pulledAtMs,
+        labelsFor,
+        prices.quotes,
+      ),
+    [activity.items, pulledAtMs, labelsFor, prices.quotes],
   );
+  const valuesLine = hideBalances
+    ? null
+    : activityValuesLine(
+        activity.items,
+        prices.quotes,
+        prices.status !== 'idle' && prices.status !== 'loading',
+        pulledAtMs,
+      );
   const reserve = resolveTabBarPresentation({
     hidden: false,
     safeAreaBottom: insets.bottom,
@@ -176,6 +206,11 @@ export default function ActivityRoot() {
             </View>
           ) : null}
 
+          {chrome.showRows && valuesLine ? (
+            <CorsoText testID="activity-values-as-of" style={styles.valuesAsOf}>
+              {valuesLine}
+            </CorsoText>
+          ) : null}
           {chrome.showRows
             ? groups.map((group) => (
                 <View key={group.key}>
@@ -242,6 +277,13 @@ const styles = StyleSheet.create({
     paddingTop: ACTIVITY_FEED_SECTION_PADDING_TOP,
     paddingBottom: ACTIVITY_FEED_SECTION_PADDING_BOTTOM,
   },
+  valuesAsOf: {
+    ...ETHENA_TYPE.sub,
+    color: ethena.ink.tertiary,
+    paddingHorizontal: ethenaGeometry.gutter + ethenaGeometry.pad,
+    paddingTop: 6,
+  },
+  /** LIB `SB/Ethena/Book Section Header` — the section step in mute. */
   sectionLabel: {
     ...ETHENA_TYPE.section,
     color: ethena.ink.secondary,

@@ -25,6 +25,7 @@ import { presentReceipt } from './receiptPresentation';
 import { useHideBalances } from '@/src/features/balances/hideBalancesPreference';
 import { DetailsSeenBlock } from '@/src/features/why/WhyViews';
 import { presentDetailsSeen } from '@/src/features/why/whyPresentation';
+import { ReceiptThenNow } from './ReceiptThenNowSlot';
 
 /** Bound receipt: chain polling and disk are read-only; it has no signing capability. */
 export function ReceiptBound({
@@ -120,9 +121,17 @@ export function ReceiptBound({
       <Receipt
         model={model}
         seen={
-          <DetailsSeenBlock
-            view={presentDetailsSeen(snapshot?.details ?? null)}
-          />
+          <>
+            <DetailsSeenBlock
+              view={presentDetailsSeen(snapshot?.details ?? null)}
+            />
+            <ReceiptThenNow
+              intent={intent}
+              review={snapshot?.reviewUnitPrice}
+              tradeTimeMs={chain?.timeMs ?? snapshot?.savedAtMs ?? null}
+              tradeTimeSettled={chain !== null || chainUnavailable}
+            />
+          </>
         }
         onBack={() => goBackOr(BACK_FALLBACK.activityTab)}
         onDone={() => router.replace('/(app)')}

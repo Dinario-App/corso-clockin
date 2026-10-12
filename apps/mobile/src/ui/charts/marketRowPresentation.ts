@@ -4,7 +4,8 @@ import {
   formatClosedBarStamp,
   formatObservationClock,
 } from '@/src/features/home/asOfPresentation';
-import { kitType, radii } from '@/src/ui/tokens';
+import { ETHENA_TYPE } from '@/constants/theme.ethenaType';
+import { radii } from '@/src/ui/tokens';
 import {
   formatCompactUsd,
   formatCount,
@@ -14,9 +15,9 @@ import {
 
 export const MARKET_ROW_CARD_RADIUS = radii.card;
 export const MARKET_ROW_CARD_PAD = 16;
-export const MARKET_ROW_BODY_SIZE = kitType.body;
-export const MARKET_ROW_TITLE_SIZE = kitType.sub;
-export const MARKET_ROW_LABEL_SIZE = kitType.caption;
+export const MARKET_ROW_BODY_SIZE = ETHENA_TYPE.rowValue.fontSize;
+export const MARKET_ROW_TITLE_SIZE = ETHENA_TYPE.section.fontSize;
+export const MARKET_ROW_LABEL_SIZE = ETHENA_TYPE.rowSub.fontSize;
 export const MARKET_ROW_TITLE = 'Market';
 
 export const MARKET_ROW_SCREEN_GUTTER = 16;
@@ -63,7 +64,8 @@ export type MarketRowCellKey =
   | 'holders'
   | 'top1'
   | 'top10'
-  | 'capFdv'
+  | 'marketCap'
+  | 'fdv'
   | 'age';
 
 export type MarketRowCell = {
@@ -104,10 +106,7 @@ function usd(value: number | null | undefined): string | null {
 function ratio(value: number | null | undefined): string | null {
   const n = positive(value);
   if (n == null) return null;
-  const text = formatRatio(n);
-  if (!text) return null;
-  if (text === '0.0×' || text === '0×') return '<0.1×';
-  return text;
+  return formatRatio(n);
 }
 
 function pct(value: number | null | undefined): string | null {
@@ -145,9 +144,7 @@ function age(ageMinutes: number | null | undefined): string | null {
 
 function knownFigureSource(source: string | undefined): boolean {
   return (
-    source === 'birdeye' ||
-    source === 'geckoterminal' ||
-    source === 'jupiter'
+    source === 'birdeye' || source === 'geckoterminal' || source === 'jupiter'
   );
 }
 
@@ -228,15 +225,22 @@ export function resolveMarketRowPresentation(
   push(cells, 'top1', 'Top 1', pct(holders?.top1Pct), holderClock, true);
   push(cells, 'top10', 'Top 10', pct(holders?.top10Pct), holderClock, true);
 
-  const mc = usd(market?.marketCapUsd);
-  const fdv = usd(market?.fdvUsd);
-  if (mc && fdv) {
-    push(cells, 'capFdv', 'MC / FDV', `${mc} / ${fdv}`, marketClock, true);
-  } else if (mc) {
-    push(cells, 'capFdv', 'Market cap', mc, marketClock, true);
-  } else if (fdv) {
-    push(cells, 'capFdv', 'FDV', fdv, marketClock, true);
-  }
+  push(
+    cells,
+    'marketCap',
+    'Market cap',
+    usd(market?.marketCapUsd),
+    marketClock,
+    true,
+  );
+  push(
+    cells,
+    'fdv',
+    'With future coins',
+    usd(market?.fdvUsd),
+    marketClock,
+    true,
+  );
 
   push(cells, 'age', 'Age', age(token?.ageMinutes ?? null), null, false);
 

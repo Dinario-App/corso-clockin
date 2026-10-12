@@ -1,7 +1,7 @@
 /** Asset identity marks `EthenaCoin` knows. Content, not a surface. */
 export type BookMark = 'usdc' | 'btc' | 'eth' | 'sol' | 'bonk' | 'jup' | 'none';
 
-export type BookSectionKey = 'cash' | 'majors' | 'sleeve';
+export type BookSectionKey = 'cash' | 'majors' | 'sleeve' | 'gold' | 'stocks';
 
 export type BookRow = {
   readonly key: string;
@@ -28,6 +28,11 @@ export type BookName = {
   readonly mint: string;
   readonly name: string;
   readonly symbol: string;
+  readonly price: string | null;
+  readonly change: {
+    readonly text: string;
+    readonly direction: 'up' | 'down' | null;
+  } | null;
 };
 
 export type BookSection = {
@@ -39,6 +44,14 @@ export type BookSection = {
   /** Shown in place of rows when the section holds nothing. */
   readonly emptyLine: string | null;
   readonly names?: readonly BookName[];
+  readonly status?: string;
+};
+
+/** The hero's change line: `$212.40 · 1.7%` + `today`, or a named failure. */
+export type BookHeroDelta = {
+  readonly direction: 'up' | 'down' | null;
+  readonly value: string;
+  readonly suffix: string;
 };
 
 export type BookHero =
@@ -54,13 +67,9 @@ export type BookHero =
       readonly eyebrow: string;
       readonly amount: string;
       readonly cents: string | null;
-      /** The price-stale age line. */
       readonly note: string | null;
-      readonly delta: {
-        readonly direction: 'up' | 'down';
-        readonly value: string;
-        readonly suffix: string;
-      } | null;
+      readonly noteTone?: 'quiet' | 'stale';
+      readonly delta: BookHeroDelta | null;
     };
 
 export type HomeBookState =
@@ -72,6 +81,51 @@ export type HomeBookState =
   | 'new'
   | 'cashOnly';
 
+export type WealthDoing = {
+  readonly title: string;
+  readonly rows: readonly {
+    readonly key: string;
+    readonly label: string;
+    readonly value: string;
+  }[];
+};
+
+/**
+ * A white luminance step, never a hue (glass material law): the class's
+ * place in the fixed order Cash, Crypto, Gold, Stocks. Never ordered by gain.
+ */
+export type WealthMixStep = 0 | 1 | 2 | 3;
+
+export type WealthMixSegment = {
+  readonly key: string;
+  readonly step: WealthMixStep;
+  /** Whole-percent share, summing to 100 across the bar. */
+  readonly percent: number;
+};
+
+/** One legend entry: the class's step swatch and `Cash 62%`. */
+export type WealthMixLegend = {
+  readonly key: string;
+  readonly step: WealthMixStep;
+  readonly text: string;
+};
+
+export type WealthMix =
+  | {
+      readonly kind: 'ready';
+      readonly title: string;
+      /** The bar. `[]` = withheld (Hide balances); the legend still names the classes. */
+      readonly segments: readonly WealthMixSegment[];
+      readonly legend: readonly WealthMixLegend[];
+    }
+  /** MX3: a coin has no price, so there is no denominator and no bar. */
+  | { readonly kind: 'unavailable'; readonly title: string; readonly line: string };
+
+export type WealthHome = {
+  readonly doing: WealthDoing | null;
+  readonly mix: WealthMix | null;
+};
+
 export type HomeBookModel = {
   readonly state: HomeBookState;
   readonly hero: BookHero;
@@ -79,4 +133,5 @@ export type HomeBookModel = {
   readonly newBookLine: string | null;
   /** `null` = sections hidden (unavailable). Otherwise always all three. */
   readonly sections: readonly BookSection[] | null;
+  readonly wealth?: WealthHome;
 };

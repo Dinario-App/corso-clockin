@@ -165,6 +165,7 @@ export function buildAssetSwapActions(args: {
   cluster: 'devnet' | 'mainnet-beta';
   heldSell?: HeldSellDoor;
   acquireAccess: AcquireAccess;
+  curated?: boolean;
 }): AssetSwapAction[] {
   const params = {
     mint: args.mint,
@@ -180,6 +181,7 @@ export function buildAssetSwapActions(args: {
     });
     if (!prefill) continue;
     if (direction === 'buy' && args.acquireAccess.kind === 'refused') continue;
+    if (direction === 'buy' && args.curated !== true) continue;
     // The held-sell gate: a held-token sell needs the book to have said yes.
     if (prefill.pay.kind === 'held' && args.heldSell?.kind !== 'eligible') {
       continue;

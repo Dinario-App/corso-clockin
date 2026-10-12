@@ -35,6 +35,33 @@ export function maskHomeBook(model: HomeBookModel): HomeBookModel {
           delta: row.delta === undefined ? undefined : maskFigure(row.delta),
         })),
       })) ?? null,
+    ...(model.wealth ? { wealth: maskWealth(model.wealth) } : {}),
+  };
+}
+
+function maskWealth(
+  wealth: NonNullable<HomeBookModel['wealth']>,
+): NonNullable<HomeBookModel['wealth']> {
+  const doing = wealth.doing && {
+    ...wealth.doing,
+    rows: wealth.doing.rows.map((row) => ({
+      ...row,
+      value: maskFiguresInline(row.value),
+    })),
+  };
+  const mix = wealth.mix;
+  if (mix?.kind !== 'ready') return { ...wealth, doing };
+  return {
+    ...wealth,
+    doing,
+    mix: {
+      ...mix,
+      segments: [],
+      legend: mix.legend.map((entry) => ({
+        ...entry,
+        text: maskFiguresInline(entry.text),
+      })),
+    },
   };
 }
 

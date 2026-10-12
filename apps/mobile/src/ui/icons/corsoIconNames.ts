@@ -1,5 +1,6 @@
+
 import type { ActivityKind } from '@/src/features/activity/types';
-import type { AndroidSymbol, SFSymbol } from 'expo-symbols';
+import type { PhosphorRegularName } from '@/src/ui/icons/phosphorRegular';
 
 export type CorsoIconName =
   | 'home'
@@ -23,6 +24,8 @@ export type CorsoIconName =
   | 'help'
   | 'play'
   | 'lock'
+  | 'mix'
+  | 'checked'
   | 'close'
   | 'chevron-double-right'
   | 'compose'
@@ -45,154 +48,61 @@ export type CorsoIconName =
   | 'result.success'
   | 'result.error';
 
-/** Platform-specific symbol names for expo-symbols SymbolView. */
-export type CorsoIconPlatformNames = {
-  /** SF Symbol name (iOS). */
-  ios: SFSymbol;
-  /** Material Symbol name (Android). */
-  android: AndroidSymbol;
-  /** Material Symbol name (web fallback path in expo-symbols). */
-  web: AndroidSymbol;
-};
-
-/**
- * Thin-line monochrome set. Prefer outline/regular over filled multicolor.
- * Keep this table the single source for tab / quick-action / activity glyphs.
- */
-export const CORSO_ICON_NAMES: Record<CorsoIconName, CorsoIconPlatformNames> = {
-  home: { ios: 'house', android: 'home', web: 'home' },
-  discover: { ios: 'safari', android: 'explore', web: 'explore' },
-  activity: { ios: 'clock', android: 'schedule', web: 'schedule' },
-  profile: { ios: 'person', android: 'person', web: 'person' },
-  threads: { ios: 'line.3.horizontal', android: 'menu', web: 'menu' },
+export const CORSO_ICON_NAMES: Record<CorsoIconName, PhosphorRegularName> = {
+  home: 'house',
+  discover: 'compass',
+  activity: 'list-bullets',
+  profile: 'user-circle',
+  /** Home top row — threads / history (chat-native, CANON-LOCK decision #1). */
+  threads: 'list',
   /** Composer attach. */
-  plus: { ios: 'plus', android: 'add', web: 'add' },
+  plus: 'plus',
   /** Composer dictation. */
-  mic: { ios: 'mic', android: 'mic', web: 'mic' },
-  send: { ios: 'arrow.up', android: 'arrow_upward', web: 'arrow_upward' },
-  request: {
-    ios: 'arrow.down',
-    android: 'arrow_downward',
-    web: 'arrow_downward',
-  },
-  swap: {
-    ios: 'arrow.left.arrow.right',
-    android: 'swap_horiz',
-    web: 'swap_horiz',
-  },
-  search: { ios: 'magnifyingglass', android: 'search', web: 'search' },
-  trend: {
-    ios: 'chart.line.uptrend.xyaxis',
-    android: 'trending_up',
-    web: 'trending_up',
-  },
-  rule: {
-    ios: 'waveform.path.ecg',
-    android: 'monitor_heart',
-    web: 'monitor_heart',
-  },
-  more: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
+  mic: 'microphone',
+  send: 'arrow-up',
+  request: 'arrow-down',
+  swap: 'arrows-left-right',
+  search: 'magnifying-glass',
+  /**
+   * Composer quick-action "What's moving" — the mock's rising zigzag
+   * (`M1.5 9.5l3.2-3.6 2.6 2.2 3-3.9 2.2 1.6`). ⛔ The GLYPH may point up; the
+   * copy on this surface still may not assert direction or rank
+   * (`copy.moving`'s vocabulary ban).
+   */
+  trend: 'trend-up',
+  rule: 'pulse',
+  more: 'dots-three',
   /** Contact-support row (Settings › Help). Envelope, not a paper plane. */
-  mail: { ios: 'envelope', android: 'mail', web: 'mail' },
-  help: {
-    ios: 'questionmark.circle',
-    android: 'help_outline',
-    web: 'help_outline',
-  },
-  play: { ios: 'play', android: 'play_arrow', web: 'play_arrow' },
-  bell: { ios: 'bell', android: 'notifications', web: 'notifications' },
-  scan: {
-    ios: 'qrcode.viewfinder',
-    android: 'qr_code_scanner',
-    web: 'qr_code_scanner',
-  },
-  settings: { ios: 'gearshape', android: 'settings', web: 'settings' },
-  lock: { ios: 'lock', android: 'lock', web: 'lock' },
-  close: { ios: 'xmark', android: 'close', web: 'close' },
-  'chevron-double-right': {
-    ios: 'chevron.right.2',
-    android: 'keyboard_double_arrow_right',
-    web: 'keyboard_double_arrow_right',
-  },
-  compose: {
-    ios: 'square.and.pencil',
-    android: 'edit_square',
-    web: 'edit_square',
-  },
-  delete: { ios: 'delete.left', android: 'backspace', web: 'backspace' },
-  'chevron-left': {
-    ios: 'chevron.left',
-    android: 'chevron_left',
-    web: 'chevron_left',
-  },
-  'chevron-right': {
-    ios: 'chevron.right',
-    android: 'chevron_right',
-    web: 'chevron_right',
-  },
-  'chevron-down': {
-    ios: 'chevron.down',
-    android: 'keyboard_arrow_down',
-    web: 'keyboard_arrow_down',
-  },
-  copy: {
-    ios: 'doc.on.doc',
-    android: 'content_copy',
-    web: 'content_copy',
-  },
-  filter: {
-    ios: 'line.3.horizontal.decrease',
-    android: 'filter_list',
-    web: 'filter_list',
-  },
-  grid: {
-    ios: 'square.grid.2x2',
-    android: 'grid_view',
-    web: 'grid_view',
-  },
-  check: { ios: 'checkmark', android: 'check', web: 'check' },
-  warning: {
-    ios: 'exclamationmark.triangle',
-    android: 'warning',
-    web: 'warning',
-  },
-  refresh: {
-    ios: 'arrow.clockwise',
-    android: 'refresh',
-    web: 'refresh',
-  },
-  sparkle: {
-    ios: 'sparkle',
-    android: 'auto_awesome',
-    web: 'auto_awesome',
-  },
-  spinner: {
-    ios: 'progress.indicator',
-    android: 'progress_activity',
-    web: 'progress_activity',
-  },
-  'activity.sent': {
-    ios: 'arrow.up',
-    android: 'arrow_upward',
-    web: 'arrow_upward',
-  },
-  'activity.received': {
-    ios: 'arrow.down',
-    android: 'arrow_downward',
-    web: 'arrow_downward',
-  },
-  'activity.swap': {
-    ios: 'arrow.left.arrow.right',
-    android: 'swap_horiz',
-    web: 'swap_horiz',
-  },
-  'activity.unknown': { ios: 'circle', android: 'circle', web: 'circle' },
-  'result.success': { ios: 'checkmark', android: 'check', web: 'check' },
-  'result.error': {
-    ios: 'exclamationmark',
-    android: 'priority_high',
-    web: 'priority_high',
-  },
+  mail: 'envelope-simple',
+  help: 'question',
+  play: 'play',
+  bell: 'bell',
+  scan: 'scan',
+  settings: 'gear',
+  lock: 'lock-simple',
+  mix: 'chart-donut',
+  checked: 'seal-check',
+  close: 'x',
+  'chevron-double-right': 'caret-double-right',
+  compose: 'note-pencil',
+  delete: 'backspace',
+  'chevron-left': 'caret-left',
+  'chevron-right': 'caret-right',
+  'chevron-down': 'caret-down',
+  copy: 'copy',
+  filter: 'funnel-simple',
+  grid: 'squares-four',
+  check: 'check',
+  warning: 'warning',
+  refresh: 'arrow-clockwise',
+  sparkle: 'sparkle',
+  spinner: 'circle-notch',
+  'activity.sent': 'arrow-up',
+  'activity.received': 'arrow-down',
+  'activity.swap': 'arrows-left-right',
+  'activity.unknown': 'circle',
+  'result.success': 'check',
+  'result.error': 'exclamation-mark',
 };
 
 export function activityKindIconName(kind: ActivityKind): CorsoIconName {

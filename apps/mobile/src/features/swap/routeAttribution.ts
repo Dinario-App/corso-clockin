@@ -34,13 +34,3 @@ export function resolveSwapRouteAttribution(input: {
     poweredByLine: copy.swap.routeProviderPoweredBy,
   };
 }
-
-export function resolveSwapRouteDisplayName(router: string | null): string {
-  if (router === null) return copy.swap.routeUnknown;
-  const names: Record<string, string> = copy.swap.routeNames;
-  const key = router.toLowerCase();
-  if (!Object.prototype.hasOwnProperty.call(names, key)) {
-    return copy.swap.routeUnknown;
-  }
-  return names[key];
-}

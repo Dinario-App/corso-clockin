@@ -37,6 +37,7 @@ export type PriceSnapshotLineQuote = {
   /** Opaque upstream label (fixture | jupiter_price | pyth | …). */
   source: string;
   maxAgeMs: number;
+  changePct24h?: number;
 };
 
 export type PriceSnapshotLine = {
@@ -326,6 +327,9 @@ export function snapshotToQuoteMap(snapshot: PriceSnapshot): PriceQuoteMap {
         source: line.quote.source,
         maxAgeMs: line.quote.maxAgeMs,
       };
+      if (line.quote.changePct24h !== undefined) {
+        quote.changePct24h = line.quote.changePct24h;
+      }
       map[line.mint] = quote;
     } else {
       map[line.mint] = null;

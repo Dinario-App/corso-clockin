@@ -4,6 +4,7 @@ import { copy } from "@/constants/copy";
 import { CorsoText } from "@/src/theme/CorsoText";
 import { StepUpSheet } from "@/src/features/security/StepUpSheet";
 import { spacing } from "@/src/ui/tokens";
+import { headsUpTokenLabel } from "./headsUpTokenNames";
 import { useHeadsUpData } from "./useHeadsUpData";
 export function HeadsUpOwnedWatches({
   addedWatchId,
@@ -30,12 +31,12 @@ export function HeadsUpOwnedWatches({
       {data.watches.map((watch) => (
         <View key={watch.id} style={{ gap: spacing.sm }}>
           <CorsoText>
-            {watch.mint.slice(0, 6)}…{watch.mint.slice(-4)} · {watch.timeframe}
+            {headsUpTokenLabel(watch.mint, data.symbols)} · {watch.timeframe}
           </CorsoText>
           {/* Heads-Up Remove stops future alerts; past events stay inactive until 30-day expiry; no Heads-Up copy may say or imply Remove deletes history. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${copy.ai.remove} ${watch.mint} ${watch.timeframe}`}
+            accessibilityLabel={`${copy.ai.remove} ${headsUpTokenLabel(watch.mint, data.symbols)} ${watch.timeframe}`}
             disabled={!!data.removing || data.status === "loading"}
             onPress={() =>
               void data.remove(watch.id).then((removed) => {

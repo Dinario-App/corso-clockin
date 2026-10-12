@@ -1,22 +1,24 @@
 import { copy } from '@/constants/copy';
+import type { SwapReceiveQuoteStatus } from './swapReceiveDisplay';
 
 export type ComposerDisclosureRow = {
-  key: 'route' | 'price' | 'corsoFee' | 'priceImpact' | 'slippage';
+  key: 'price' | 'corsoFee' | 'priceImpact' | 'slippage';
   label: string;
   value: string;
 };
 
 /** Keeps the compact composer hierarchy complete and review-independent. */
 export function buildComposerDisclosureRows(args: {
-  route: string;
+  quoteStatus: SwapReceiveQuoteStatus;
   price: string;
   corsoFee: string;
   priceImpact: string;
   slippage: string;
 }): ComposerDisclosureRow[] {
   return [
-    { key: 'route', label: copy.swap.route, value: args.route },
-    { key: 'price', label: copy.swap.price, value: args.price },
+    ...(args.quoteStatus === 'ready'
+      ? [{ key: 'price' as const, label: copy.swap.price, value: args.price }]
+      : []),
     { key: 'corsoFee', label: copy.swap.corsoFee, value: args.corsoFee },
     {
       key: 'priceImpact',

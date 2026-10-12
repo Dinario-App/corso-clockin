@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { copy } from '@/constants/copy';
 import {
   resolveTokenFactsConfig,
   type TokenFactsConfig,
@@ -59,6 +60,8 @@ export function initialFetchCoreState(): TokenFactsCoreState {
   return { status: 'loading', facts: null, error: null };
 }
 
+const FACTS_ERROR = copy.tokenFacts.unavailable;
+
 export function reduceTokenFactsFetch(args: {
   prev: TokenFactsCoreState;
   mode: 'initial' | 'refresh';
@@ -82,14 +85,14 @@ export function reduceTokenFactsFetch(args: {
     return {
       status: statusFromFacts(prev.facts),
       facts: prev.facts,
-      error: result.message,
+      error: FACTS_ERROR,
     };
   }
 
   return {
     status: 'error',
     facts: null,
-    error: result.message,
+    error: FACTS_ERROR,
   };
 }
 

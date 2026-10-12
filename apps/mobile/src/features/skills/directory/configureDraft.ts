@@ -1,4 +1,5 @@
 import { copy } from '@/constants/copy';
+import { bpsToExactPercent, exactPercentToBps } from '@/src/lib/exactPercent';
 import { SOL_MINT, usdcMintForCluster } from '@/src/features/swap/tokens';
 import {
   isSafetyCrossSkill,
@@ -28,6 +29,7 @@ export type ConfigureSlotsInput = {
   perFireMax: string;
   perDayMaxFires: string;
   perDayMax: string;
+  /** Percent text in the form; the draft cap remains integer bps. */
   minOutBps: string;
   expiryDays: string;
 };
@@ -161,7 +163,7 @@ export function initialConfigureSlots(
     perFireMax: '',
     perDayMaxFires: String(template.slots.perDayMaxFires.default),
     perDayMax: '',
-    minOutBps: String(template.slots.minOutBps.default),
+    minOutBps: bpsToExactPercent(template.slots.minOutBps.default) ?? '',
     expiryDays: String(template.slots.expiryDays.default),
   };
 }
@@ -288,13 +290,17 @@ export function validateConfigureSlots(
     }
   }
 
-  if (!isPositiveInteger(slots.minOutBps)) {
-    errors.minOutBps = c.positiveInteger;
-  } else {
-    const bps = Number(slots.minOutBps);
-    if (bps < bounds.minOutBps.min || bps > bounds.minOutBps.max) {
-      errors.minOutBps = c.minOutBpsRange(bounds.minOutBps.max);
-    }
+  const bps = exactPercentToBps(slots.minOutBps);
+  const maxPercent = bpsToExactPercent(bounds.minOutBps.max);
+  if (maxPercent === null) {
+    // Invalid template bounds cannot authorize a draft.
+    errors.minOutBps = c.positiveDecimal;
+  } else if (
+    bps === null ||
+    bps < bounds.minOutBps.min ||
+    bps > bounds.minOutBps.max
+  ) {
+    errors.minOutBps = c.minOutBpsRange(maxPercent);
   }
 
   if (!isPositiveInteger(slots.expiryDays)) {
@@ -341,6 +347,8 @@ export function buildSkillMandateDraft(args: {
   ) {
     return null;
   }
+  const minOutBps = exactPercentToBps(slots.minOutBps);
+  if (minOutBps === null) return null;
   const days = Number(slots.expiryDays);
   const name = copy.skills.template[template.id].name;
   const c = copy.skills.configure;
@@ -359,7 +367,7 @@ export function buildSkillMandateDraft(args: {
       perFireMaxBaseUnits,
       perDayMaxFires: Number(slots.perDayMaxFires),
       perDayMaxBaseUnits,
-      minOutBps: Number(slots.minOutBps),
+      minOutBps,
     }),
     expiry: Object.freeze({
       expiresAt: new Date(now.getTime() + days * DAY_MS).toISOString(),

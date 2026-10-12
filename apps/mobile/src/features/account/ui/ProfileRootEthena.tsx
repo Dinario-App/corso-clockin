@@ -64,7 +64,7 @@ export type ProfileRootRowProps = {
   disabled?: boolean;
   /** Last row in its pane: no hairline under it. */
   last?: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   testID: string;
 };
 
@@ -86,25 +86,18 @@ export function ProfileRootRow({
     .filter((part): part is string => Boolean(part))
     .join(', ');
 
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={spoken}
-      accessibilityState={{ disabled }}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: PROFILE_ROW.gap,
-        paddingVertical: PROFILE_ROW.padV,
-        paddingHorizontal: PROFILE_ROW.padH,
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: ethena.hair,
-        opacity: disabled ? 0.4 : 1,
-      }}
-    >
+  const rowStyle: ViewStyle = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: PROFILE_ROW.gap,
+    paddingVertical: PROFILE_ROW.padV,
+    paddingHorizontal: PROFILE_ROW.padH,
+    borderBottomWidth: last ? 0 : 1,
+    borderBottomColor: ethena.hair,
+    opacity: disabled ? 0.4 : 1,
+  };
+  const content = (
+    <>
       <View
         accessible={false}
         style={{
@@ -143,6 +136,32 @@ export function ProfileRootRow({
           color={ethena.ink3}
         />
       ) : null}
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View
+        testID={testID}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={spoken}
+        style={rowStyle}
+      >
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={spoken}
+      accessibilityState={{ disabled }}
+      style={rowStyle}
+    >
+      {content}
     </Pressable>
   );
 }

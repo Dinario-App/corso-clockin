@@ -541,7 +541,6 @@ export function showsFeeRateClaim(
 
 /* ─── The book, as the sheet reads it ─────────────────────────────────────── */
 
-/** The slice of `useFiatTotal()` the sheet reads — the Book's own read. */
 export type AskSheetBook = HomeBookRead & {
   quotes: PriceQuoteMap;
   result: HomeBookRead['result'] & { sources?: readonly string[] };
@@ -1284,6 +1283,7 @@ function presentTrade(
   };
 }
 
+
 export function presentSuggestions(
   holdings: HoldingsSnapshot | null,
   built: readonly SuggestedAsk[],
@@ -1297,9 +1297,16 @@ export function presentSuggestions(
         /^\d+$/.test(line.atomic) &&
         BigInt(line.atomic) > 0n,
     );
+  const zero = holdings?.quantityStatus === 'ready' && !held;
   const all: SuggestedAsk[] = held
     ? [{ id: 'split', label: t.bookSplit, action: 'ask' }, ...kept]
-    : kept;
+    : zero
+      ? [
+          { id: 'solanaToday', label: t.solanaToday, action: 'ask' },
+          { id: 'whatDoesWait', label: t.whatDoesWait, action: 'ask' },
+          ...kept,
+        ]
+      : kept;
   const chips = all.slice(0, 3).map((chip) => ({
     key: chip.id,
     label: chip.id === 'fund' ? t.addCash : chip.label,
@@ -1350,6 +1357,8 @@ export function presentAskSheet(input: {
       lookedAt: null,
       closeLabel,
       suggestions: input.askEnabled ? input.suggestions : [],
+      suggestionsLabel:
+        input.askEnabled && input.suggestions.length > 0 ? t.startHere : null,
       composer,
     };
   }

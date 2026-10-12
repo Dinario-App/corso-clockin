@@ -11,10 +11,10 @@ import {
 import { presentVerdictSourcesSubLine } from '@/src/features/tokenVitals/verdictSurface';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { useAccessibilityPreference } from '@/src/motion/useAccessibilityPreference.js';
-import { Material } from '@/src/ui/glass/Material';
-import { MATERIAL_WEIGHTS } from '@/src/ui/glass/materialTokens';
+import { ethena, ethenaInk, HAIR } from '@/constants/theme.ethena';
+import { EthenaTray } from '@/src/ui/ethena/EthenaPrimitives';
 import { ScrollEdgeFade } from '@/src/ui/primitives/ScrollEdgeFade';
-import { colors, typography } from '@/src/ui/tokens';
+import { typography } from '@/src/ui/tokens';
 import { EvidenceRow } from './EvidenceRow';
 import { ReadRing } from './ReadRing';
 import { ReadRingSection } from './ReadRingSection';
@@ -36,6 +36,7 @@ import {
   type VerdictChipTone,
   type VerdictTone,
 } from './verdictCardPresentation';
+
 
 /** One fact. The name is the callers' — the card paints it as a row. */
 export type VerdictEvidenceChip = {
@@ -63,6 +64,8 @@ export type VerdictCardProps = {
    * the identity row and a second one on the card would be the same mark twice.
    */
   ringPlacement?: 'card' | 'none';
+  coverage?: 'section' | 'none';
+  /** The read stamp — the older of the two reads, only when both answered. */
   stampText?: string | null;
   /** The reason — one sentence, 15/400 `grey1`. */
   subLine?: string | null;
@@ -83,6 +86,7 @@ export function VerdictCard({
   word,
   ring = null,
   ringPlacement = 'card',
+  coverage = 'section',
   stampText = null,
   subLine = null,
   evidence = [],
@@ -105,12 +109,9 @@ export function VerdictCard({
   const sourcesSub = presentVerdictSourcesSubLine(subLine);
 
   return (
-    <Material
-      weight="card"
-      radius={G.radius}
-      style={style}
-      contentStyle={styles.body}
-      testID={testID}
+    <EthenaTray
+      testID={testID ?? 'verdict-card'}
+      style={StyleSheet.flatten([styles.body, style])}
     >
       <View
         accessible
@@ -181,7 +182,7 @@ export function VerdictCard({
           <CorsoText style={styles.caption}>{ring.caption}</CorsoText>
         )}
 
-        <ReadRingSection ring={ring} />
+        {coverage === 'none' ? null : <ReadRingSection ring={ring} />}
 
         {ring !== null || evidence.length === 0 ? null : (
           <View style={styles.evidenceViewport}>
@@ -205,7 +206,7 @@ export function VerdictCard({
             <ScrollEdgeFade
               top={0}
               bottom={EVIDENCE_SCROLL_FADE_DEPTH}
-              color={MATERIAL_WEIGHTS.card.opaqueFill}
+              color={ethena.trayMeasured}
               testID="verdict-evidence-scroll-fade"
             />
           </View>
@@ -226,7 +227,7 @@ export function VerdictCard({
           <VerdictCta action={action} pressable={steps.ctaArmed} />
         </Animated.View>
       )}
-    </Material>
+    </EthenaTray>
   );
 }
 
@@ -395,20 +396,20 @@ const styles = StyleSheet.create({
     letterSpacing: G.wordLetterSpacing,
     fontFamily: typography.face(G.wordWeight),
     fontWeight: canonWeight(G.wordWeight),
-    color: colors.ink,
+    color: ethenaInk.primary,
   },
   stamp: { marginLeft: 'auto', alignSelf: 'flex-start', flexShrink: 0 },
   stampText: {
     fontSize: R.stampSize,
     fontFamily: typography.face('400'),
     fontWeight: canonWeight('400'),
-    color: colors.inkTertiary,
+    color: ethenaInk.tertiary,
   },
   sub: {
     fontSize: G.subSize,
     fontFamily: typography.face(G.subWeight),
     fontWeight: canonWeight(G.subWeight),
-    color: colors.inkSecondary,
+    color: ethenaInk.secondary,
     marginBottom: G.subMarginBottom,
   },
   notRun: { marginBottom: 4 },
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
     fontSize: R.captionSize,
     fontFamily: typography.face('400'),
     fontWeight: canonWeight('400'),
-    color: colors.inkTertiary,
+    color: ethenaInk.tertiary,
   },
   /**
    * The rows' block opens with the full-width hairline the stills draw under
@@ -425,7 +426,7 @@ const styles = StyleSheet.create({
    */
   evidence: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
+    borderTopColor: HAIR,
     paddingBottom: EVIDENCE_SCROLL_FADE_DEPTH,
   },
   evidenceViewport: {

@@ -3,6 +3,10 @@ import { GLASS_FAINT, GLASS_MUTE } from '@/src/ui/glass/glassTokens';
 import { colors, radii } from '@/src/ui/tokens';
 import { truncateAddress } from '@/src/lib/truncateAddress';
 import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
+import {
   resolveActivityListChrome,
   resolveActivityStatusLabel,
 } from './activityRoutePresentation';
@@ -11,6 +15,8 @@ import {
   type ActivityRowLabelEvidence,
 } from './activityLabels';
 import { formatActivityAmount } from './formatActivityAmount';
+import { activityRowFiatText } from './activityFiat';
+import type { PriceQuoteMap } from '@/src/features/balances/computeFiatTotal';
 import { groupActivityByDay } from './groupByDay';
 import type { ActivityItem } from './types';
 import type { CorsoIconName } from '@/src/ui/icons/corsoIconNames';
@@ -156,7 +162,11 @@ export function statusKindFor(
  */
 export function resolveActivityFeedRow(
   item: ActivityItem,
-  input: { nowMs: number; labels?: ActivityRowLabelEvidence },
+  input: {
+    nowMs: number;
+    labels?: ActivityRowLabelEvidence;
+    quotes?: PriceQuoteMap;
+  },
 ): ActivityFeedRowView {
   const title = resolveActivityRowTitle(item, input.labels);
   const rawAmount =
@@ -193,8 +203,7 @@ export function resolveActivityFeedRow(
     amountText,
     amountTone,
     amountIsPlaceholder,
-    /** 🔴 See `fiatText` on the type: no priced source, so no fiat line. */
-    fiatText: null,
+    fiatText: activityRowFiatText(item, input.quotes, input.nowMs),
     statusLabel,
     statusTone: tone,
     statusKind: statusKindFor(item.status),
@@ -207,12 +216,17 @@ export function resolveActivityFeedGroups(
   nowMs: number,
   labelsFor: (signature: string) => ActivityRowLabelEvidence | undefined = () =>
     undefined,
+  quotes?: PriceQuoteMap,
 ): ActivityFeedGroupView[] {
   return groupActivityByDay(items, nowMs).map((group) => ({
     key: group.key,
     label: group.label,
     rows: group.items.map((item) =>
-      resolveActivityFeedRow(item, { nowMs, labels: labelsFor(item.signature) }),
+      resolveActivityFeedRow(item, {
+        nowMs,
+        labels: labelsFor(item.signature),
+        quotes,
+      }),
     ),
   }));
 }
@@ -223,6 +237,7 @@ export function resolveActivityFeedChrome(input: {
   status: 'idle' | 'loading' | 'ready' | 'error';
   itemCount: number;
   hasAddress?: boolean;
+  failState?: ReadFailState;
 }): ActivityFeedChrome {
   if (input.hasAddress === false) {
     return {
@@ -250,7 +265,7 @@ export function resolveActivityFeedChrome(input: {
     return {
       state: 'error',
       showRows: input.itemCount > 0,
-      title: copy.activity.error,
+      title: readFailLine(input.failState, copy.activity.error),
       body: copy.roots.activityErrorHint,
     };
   }

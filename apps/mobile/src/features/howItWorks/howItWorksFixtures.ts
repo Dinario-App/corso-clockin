@@ -97,7 +97,7 @@ export const HOW_IT_WORKS_VERDICT: HowItWorksVerdictFixture = Object.freeze({
       key: 'mint-authority',
       tone: 'ok' as const,
       label: copy.tokenFacts.mintAuthority,
-      value: copy.tokenFacts.renounced,
+      value: copy.tokenFacts.no,
     },
     { key: 'lp-locked', tone: 'ok' as const, label: copy.tokenFacts.lpLocked, value: '98%' },
     {

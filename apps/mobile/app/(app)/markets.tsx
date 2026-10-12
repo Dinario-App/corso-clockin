@@ -19,7 +19,12 @@ import {
 import { useAcquireGateInputs } from '@/src/features/security/useAcquireGateInputs';
 import { MARKETS_MAJOR_MINTS } from '@/src/features/markets/marketsMovingPresentation';
 import { useWhy } from '@/src/features/why/useWhy';
+import {
+  useOnReconnect,
+  useReadFailState,
+} from '@/src/features/connectivity/useConnectivity';
 import { SwapTokenPickerSheet } from '@/src/features/tokenFacts/SwapTokenPickerSheet';
+import { useCuratedBook } from '@/src/features/universe/useCuratedBook';
 import { readLaunchDockBuildFlag } from '@/src/features/navigation/launchDockEnv';
 import { readPortfolioName } from '@/src/features/onboarding/portfolioNameStore';
 import { useAccessibilityPreference } from '@/src/motion/useAccessibilityPreference';
@@ -42,6 +47,7 @@ function MarketsRoute() {
   const gateInputs = useAcquireGateInputs();
   const [storedName, setStoredName] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const curated = useCuratedBook(searchOpen);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +66,10 @@ function MarketsRoute() {
     }, [refresh]),
   );
   const pull = usePullRefresh(refresh);
+  const failState = useReadFailState();
+  useOnReconnect(() => {
+    void refresh();
+  });
 
   const dock = resolveTabBarPresentation({
     hidden: false,
@@ -76,6 +86,7 @@ function MarketsRoute() {
           changes: moving.changes,
           nowMs: Date.now(),
           why,
+          failState,
         })}
         plans={presentInvestmentPlans()}
         stocks={presentStocksShelf(gateInputs)}
@@ -92,7 +103,8 @@ function MarketsRoute() {
         visible={searchOpen}
         tokens={[]}
         selectedMint=""
-        allowSearch
+        bookState={curated.state}
+        book={curated.book}
         acquireRows
         onSelect={(token) => {
           setSearchOpen(false);

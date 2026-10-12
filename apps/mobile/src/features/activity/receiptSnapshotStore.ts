@@ -2,6 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type DetailsSnapshot, parseDetailsSnapshot } from '@corso/why';
 import type { ReceiptSignedIntent } from './receiptPresentation';
 
+export type ReviewUnitPrice = Readonly<{
+  mint: string;
+  /** Human USD per 1 whole token, decimal string (M2a grammar). */
+  usd: string;
+  /** The quote's own `asOfMs`, which labels the price. */
+  asOfMs: number;
+}>;
+
 export const RECEIPT_SNAPSHOTS_KEY = 'corso.receiptSnapshots.v1';
 export type ReceiptSnapshot = Readonly<{
   bookEffect: string | null;
@@ -9,6 +17,7 @@ export type ReceiptSnapshot = Readonly<{
   savedAtMs: number;
   details?: DetailsSnapshot | null;
   intent?: ReceiptSignedIntent | null;
+  reviewUnitPrice?: ReviewUnitPrice | null;
 }>;
 export type ReceiptSnapshotStorage = {
   getItem(key: string): Promise<string | null>;
@@ -119,6 +128,23 @@ function parseIntent(value: unknown): ReceiptSignedIntent | null {
     side: i.side,
   };
 }
+export function parseReviewUnitPrice(value: unknown): ReviewUnitPrice | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const item = value as Record<string, unknown>;
+  const keys = Object.keys(item).sort().join(',');
+  if (keys !== 'asOfMs,mint,usd') return null;
+  if (
+    typeof item.mint !== 'string' ||
+    !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(item.mint)
+  )
+    return null;
+  if (typeof item.usd !== 'string' || !/^\d+(\.\d+)?$/.test(item.usd))
+    return null;
+  if (!intIn(item.asOfMs, MAX_DATE_MS) || (item.asOfMs as number) <= 0)
+    return null;
+  return { mint: item.mint, usd: item.usd, asOfMs: item.asOfMs as number };
+}
+
 function validSnapshot(value: unknown): value is ReceiptSnapshot {
   if (!value || typeof value !== 'object') return false;
   const item = value as ReceiptSnapshot;
@@ -136,6 +162,9 @@ function normalized(item: ReceiptSnapshot): ReceiptSnapshot {
     quoteAgeSeconds: item.quoteAgeSeconds,
     savedAtMs: item.savedAtMs,
     ...(item.intent !== undefined ? { intent: parseIntent(item.intent) } : {}),
+    ...(item.reviewUnitPrice !== undefined
+      ? { reviewUnitPrice: parseReviewUnitPrice(item.reviewUnitPrice) }
+      : {}),
   };
   if (item.details === undefined) return base;
   const details = parseDetailsSnapshot(

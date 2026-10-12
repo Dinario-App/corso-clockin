@@ -12,6 +12,7 @@
  * (`features/discovery/moderation.ts`).
  */
 import { isModeratedTokenLabel } from '@/src/features/discovery/moderation';
+import { parsePlainRisk } from '@/src/features/plainRisk/parsePlainRisk';
 import { isValidPriceMint } from '@/src/features/balances/priceSnapshot';
 import {
   VITAL_KEYS,
@@ -864,6 +865,7 @@ export function parseVitalsPayload(raw: unknown): VitalsPayload | null {
     },
     ...(tradeLeadIn ? { tradeLeadIn } : {}),
     disclosures: { isInformationNotAdvice: true, sourcesLabel, lossNudge },
+    ...(body.riskLevel !== undefined ? { plainRisk: parsePlainRisk(body) } : {}),
   };
 }
 
@@ -880,8 +882,6 @@ export function parseVitalsDisambiguation(
   const query = shortString(body.query, 32);
   if (
     !query ||
-    // The query is printed back in the card's own sentence, so it is judged
-    // exactly like a label.
     isModeratedTokenLabel({ symbol: query }) ||
     !Array.isArray(body.choices) ||
     body.choices.length === 0 ||

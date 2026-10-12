@@ -1,3 +1,4 @@
+import { suspendSwapInputs, lockSwapInputs, resumeMountedSwap, clearSwapResume } from '@/src/features/swap/lockResume';
 import { mwaRuntimeTransact } from '@/src/features/connect/mwaRuntime';
 import { resolveConnectEnabled } from '@/src/lib/apiConfig';
 import { MWA_IDENTITY, validMwaIdentity } from '@/src/features/connect/connectFlow';
@@ -555,6 +556,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const commitLocked = useCallback((nextLocked: boolean) => {
     lockStateCell.current = nextLocked;
+    if (nextLocked) lockSwapInputs();
     setLocked(nextLocked);
   }, [lockStateCell]);
 
@@ -988,6 +990,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const sessionIdentityKey = session
     ? `${session.type}:${session.address}`
     : 'none';
+  useEffect(() => { clearSwapResume(); }, [sessionIdentityKey]);
   const moneySignerGateRoot = useSessionMoneySignerGateRoot({
     liveSessionCell,
     liveLockCell: lockStateCell,
@@ -1007,6 +1010,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') incomingClearForegroundRef.current();
       appStateRef.current = nextState;
+      if (nextState !== 'active' && lockPref) suspendSwapInputs();
       const step = stepResumeGrace({
         away: resumeAwayRef.current,
         nextState,
@@ -1016,6 +1020,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       resumeAwayRef.current = step.away;
       // The gate closes before the cover lifts, so no frame shows the session.
       if (step.lock) commitLocked(true);
+      else if (nextState === 'active' && !lockStateCell.current) resumeMountedSwap();
       setConcealed(
         shouldConcealForAppState({ nextState, lockPreference: lockPref }),
       );

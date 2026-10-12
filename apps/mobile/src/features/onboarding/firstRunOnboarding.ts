@@ -1,5 +1,8 @@
+
+import { copy } from '@/constants/copy';
+
 export type FirstRunIntent = 'new' | 'restore';
-export type FirstRunStep = 'name' | 'how' | 'fund';
+export type FirstRunStep = 'name' | 'how' | 'pick' | 'fund';
 
 export const FIRST_RUN_ROUTES: Record<
   FirstRunStep,
@@ -7,6 +10,7 @@ export const FIRST_RUN_ROUTES: Record<
 > = {
   name: '/onboarding/name',
   how: '/onboarding/how',
+  pick: '/onboarding/pick',
   fund: '/onboarding/fund',
 };
 
@@ -60,6 +64,10 @@ export function resolveFirstRunGate(input: {
 
 /** 02 — the field's placeholder and the name kept when the person skips. */
 export const PORTFOLIO_NAME_DEFAULT = 'My portfolio';
+
+export function portfolioNamePlaceholder(wealthV1: boolean): string {
+  return wealthV1 ? copy.homeBook.defaultName : PORTFOLIO_NAME_DEFAULT;
+}
 export const PORTFOLIO_NAME_MAX = 32;
 export const PORTFOLIO_NAME_STORAGE_KEY = '@corso/onboarding/portfolioName';
 

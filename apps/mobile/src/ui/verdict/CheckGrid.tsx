@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { CorsoText } from '@/src/theme/CorsoText';
+import { ethenaInk, HAIR } from '@/constants/theme.ethena';
 import { colors, typography } from '@/src/ui/tokens';
 import type {
   ReadRingCell,
@@ -9,8 +11,10 @@ import type {
 import { canonWeight } from './verdictCardPresentation';
 import {
   CHECK_GRID as GRID,
+  isCheckFactList,
   isHollowMark,
   resolveCheckGridRows,
+  resolveCheckLabelLines,
   resolveMarkColor,
 } from './readRingPresentation';
 
@@ -50,34 +54,22 @@ export function CheckGrid({
                 testID={`check-cell-${cell.id}`}
               >
                 <View style={styles.labelRow}>
-                  <View style={styles.markSlot}>
+                  <View style={[styles.markSlot, styles.markSlotFirstLine]}>
                     <CheckMark mark={cell.mark} />
                   </View>
-                  <CorsoText style={styles.label} numberOfLines={1}>
-                    {cell.label}
-                  </CorsoText>
-                </View>
-                <CorsoText
-                  style={[
-                    styles.value,
-                    cell.mark === 'not_read' || cell.mark === 'unknown'
-                      ? styles.valueMuted
-                      : null,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {cell.value}
-                </CorsoText>
-                {cell.extra.map((line) => (
-                  <View key={line.key} style={styles.extraRow}>
-                    <View style={styles.markSlot}>
-                      <CheckMark mark={line.mark} small />
-                    </View>
-                    <CorsoText style={styles.extra} numberOfLines={1}>
-                      {line.text}
-                    </CorsoText>
+                  <View style={styles.labelLines}>
+                    {resolveCheckLabelLines(cell.id, cell.label).map((line) => (
+                      <CorsoText
+                        key={line}
+                        style={styles.label}
+                        numberOfLines={1}
+                      >
+                        {line}
+                      </CorsoText>
+                    ))}
                   </View>
-                ))}
+                </View>
+                {checkFacts(cell)}
               </View>
             ),
           )}
@@ -85,6 +77,42 @@ export function CheckGrid({
       ))}
     </View>
   );
+}
+
+function checkFacts(cell: ReadRingCell): ReactNode {
+  const factList = isCheckFactList(cell.id);
+  const factLineScale = factList ? GRID.factLineMaxFontScale : undefined;
+  const facts = [
+    <CorsoText
+      key="value"
+      style={[
+        styles.value,
+        factList ? styles.valueFactLine : null,
+        cell.mark === 'not_read' || cell.mark === 'unknown'
+          ? styles.valueMuted
+          : null,
+      ]}
+      numberOfLines={1}
+      maxFontSizeMultiplier={factLineScale}
+    >
+      {cell.value}
+    </CorsoText>,
+    ...cell.extra.map((line) => (
+      <View key={line.key} style={styles.extraRow}>
+        <View style={styles.markSlot}>
+          <CheckMark mark={line.mark} small />
+        </View>
+        <CorsoText
+          style={styles.extra}
+          numberOfLines={1}
+          maxFontSizeMultiplier={factLineScale}
+        >
+          {line.text}
+        </CorsoText>
+      </View>
+    )),
+  ];
+  return factList ? <View style={styles.factList}>{facts}</View> : facts;
 }
 
 const MARK_PATH: Readonly<Record<'octagon' | 'triangle', string>> =
@@ -145,7 +173,7 @@ const styles = StyleSheet.create({
   grid: {
     marginTop: GRID.rowPaddingVertical,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
+    borderTopColor: HAIR,
   },
   row: {
     flexDirection: 'row',
@@ -168,9 +196,15 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
+    borderBottomColor: HAIR,
   },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: GRID.markGap },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: GRID.markGap,
+  },
+  markSlotFirstLine: { height: GRID.labelLineHeight },
+  labelLines: { flexShrink: 1 },
   markSlot: {
     width: GRID.markSlot,
     alignItems: 'center',
@@ -183,7 +217,7 @@ const styles = StyleSheet.create({
     lineHeight: GRID.labelLineHeight,
     fontFamily: typography.face('400'),
     fontWeight: canonWeight('400'),
-    color: colors.inkTertiary,
+    color: ethenaInk.tertiary,
   },
   value: {
     paddingLeft: GRID.valueIndent,
@@ -193,8 +227,19 @@ const styles = StyleSheet.create({
     fontWeight: canonWeight(GRID.valueWeight),
     color: colors.ink,
   },
+  valueFactLine: {
+    fontSize: GRID.extraSize,
+    lineHeight: GRID.extraLineHeight,
+  },
+  /** Check 7's facts stack with no gap; the label keeps its 3 dp above them. */
+  factList: { gap: 0 },
   /** "Not read" and "Unknown" are absences: grey2, never the value's white. */
-  valueMuted: { color: colors.inkTertiary },
+  valueMuted: { color: ethenaInk.tertiary },
+  /**
+   * The second line hangs off the LABEL's mark column, not the value's indent:
+   * it is a sibling fact of the cell, and at 369 dp the deeper indent clipped
+   * "Top holder 99.9%" (`readRingPresentation.test.ts`, TB8).
+   */
   extraRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,6 +251,6 @@ const styles = StyleSheet.create({
     lineHeight: GRID.extraLineHeight,
     fontFamily: typography.face('400'),
     fontWeight: canonWeight('400'),
-    color: colors.inkSecondary,
+    color: ethenaInk.secondary,
   },
 });

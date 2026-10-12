@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { PriceAlertNotifications } from '@/src/features/priceAlerts/PriceAlertNotifications';
 import { useHeadsUpData } from '@/src/features/skills/directory/useHeadsUpData';
+import { headsUpTokenLabel } from '@/src/features/skills/directory/headsUpTokenNames';
 import { StepUpSheet } from '@/src/features/security/StepUpSheet';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
@@ -95,12 +96,12 @@ export default function NotificationsScreen() {
           </View>
           <PriceAlertNotifications refreshKey={alertRefreshKey} onState={onAlertState} />
           {notifications.items.map(event => <SettingsCard key={event.id} contentStyle={styles.cardContent}>
-            <CorsoText style={styles.empty}>{copy.skills.template.heads_up.name} · {event.mint.slice(0, 6)}…{event.mint.slice(-4)}</CorsoText>
+            <CorsoText style={styles.empty}>{copy.skills.template.heads_up.name} · {headsUpTokenLabel(event.mint, data.symbols)}</CorsoText>
             <CorsoText style={styles.empty}>{copy.skills.test.confluence.timeframe(event.timeframe)}</CorsoText>
             <CorsoText style={styles.empty}>{copy.skills.test.confluence.side[event.fromSide]} → {copy.skills.test.confluence.side[event.toSide]}</CorsoText>
             <CorsoText style={styles.empty}>{new Date(event.observedAt).toLocaleString()}</CorsoText>
             {/* Heads-Up Remove stops future alerts; past events stay inactive until 30-day expiry; no Heads-Up copy may say or imply Remove deletes history. */}
-            {event.active ? <Pressable accessibilityRole="button" accessibilityLabel={`${copy.ai.remove} ${event.mint} ${event.timeframe}`} disabled={!!data.removing || data.status === 'loading'} onPress={() => void data.remove(event.watchId)} style={{ minHeight: 44, justifyContent: 'center' }} testID={`heads-up-inbox-remove-${event.watchId}`}>
+            {event.active ? <Pressable accessibilityRole="button" accessibilityLabel={`${copy.ai.remove} ${headsUpTokenLabel(event.mint, data.symbols)} ${event.timeframe}`} disabled={!!data.removing || data.status === 'loading'} onPress={() => void data.remove(event.watchId)} style={{ minHeight: 44, justifyContent: 'center' }} testID={`heads-up-inbox-remove-${event.watchId}`}>
               {data.removing === event.watchId ? <ActivityIndicator color={ethena.ink.primary} /> : <CorsoText style={styles.empty}>{copy.ai.remove}</CorsoText>}
             </Pressable> : null}
           </SettingsCard>)}

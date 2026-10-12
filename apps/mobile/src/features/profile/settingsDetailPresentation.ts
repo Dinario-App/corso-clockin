@@ -11,16 +11,20 @@ import {
 } from '@/src/features/profile/settingsRoutePresentation';
 import { SECURITY_RECOVERY_HREF } from '@/src/features/profile/securityRoutePresentation';
 import type { CorsoIconName } from '@/src/ui/icons/corsoIconNames.js';
+import { defaultAssistantRow } from '@/src/features/aiConsent/ui/defaultAssistantRow';
+import type { DefaultAssistantDecision } from '@/src/features/aiConsent/aiConsentStore';
 
 export type SettingsDetailRow =
   | {
-      id: 'biometrics' | 'analytics';
+      id: 'biometrics' | 'analytics' | 'default-assistant';
       kind: 'switch';
       glyph: CorsoIconName;
       label: string;
       sub: string;
       checked: boolean;
       disabled: boolean;
+      /** Set only where a cleared label exists; the screen falls back per id. */
+      accessibilityLabel?: string;
     }
   | {
       id:
@@ -74,7 +78,14 @@ export function resolveSettingsDetailPresentation(input: {
   analyticsOn: unknown;
   /** False until `isAnalyticsOptedOut()` has answered; the switch waits. */
   analyticsReady: unknown;
+  assistantDecision?: unknown;
 }): SettingsDetailPresentation {
+  const assistant = defaultAssistantRow(
+    input.assistantDecision === 'allowed' ||
+      input.assistantDecision === 'declined'
+      ? (input.assistantDecision as DefaultAssistantDecision)
+      : 'unset',
+  );
   const presentation: SettingsDetailPresentation = {
     title: copy.v1.settings,
     sections: [
@@ -164,6 +175,16 @@ export function resolveSettingsDetailPresentation(input: {
             sub: copy.profile.analyticsTitle,
             checked: input.analyticsOn === true,
             disabled: input.analyticsReady !== true || input.busy === true,
+          },
+          {
+            id: 'default-assistant',
+            kind: 'switch',
+            glyph: 'sparkle',
+            label: assistant.label,
+            sub: assistant.sub,
+            checked: assistant.checked,
+            disabled: input.busy === true,
+            accessibilityLabel: assistant.accessibilityLabel,
           },
         ],
       },

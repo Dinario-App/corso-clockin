@@ -28,7 +28,35 @@ export type TokenSearchResult = {
   isVerified: boolean | null;
   /** Jupiter's reported USD liquidity. Null stays unknown. */
   liquidityUsd: number | null;
+  name: string | null;
+  /** Jupiter's holder count, a whole number ≥ 0. */
+  holderCount: number | null;
+  /** Share held by the top holders, 0–100. */
+  topHoldersPct: number | null;
+  /** Jupiter's audit flag. False only when the audit said so. */
+  isSus: boolean | null;
+  /** The search-level RugCheck tier. Absent is not the same as `ok`. */
+  rugcheckTier: TokenSearchRugcheckTier | null;
 };
+
+export type TokenSearchRugcheckTier = 'ok' | 'caution' | 'danger';
+
+const RUGCHECK_TIERS = new Set<string>(['ok', 'caution', 'danger']);
+
+function readCount(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
+function readPct(value: unknown): number | null {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 100
+    ? value
+    : null;
+}
 
 function resolveApiBaseUrl(override?: string | null): string | null {
   if (override !== undefined) {
@@ -74,6 +102,7 @@ export function parseTokenSearchRow(value: unknown): TokenSearchResult | null {
   }
 
   const liquidityUsd = row.liquidityUsd;
+  const trimmedName = name?.trim() ?? '';
 
   return {
     token: { symbol, mint, decimals },
@@ -83,6 +112,15 @@ export function parseTokenSearchRow(value: unknown): TokenSearchResult | null {
       Number.isFinite(liquidityUsd) &&
       liquidityUsd >= 0
         ? liquidityUsd
+        : null,
+    name: trimmedName.length > 0 ? trimmedName : null,
+    holderCount: readCount(row.holderCount),
+    topHoldersPct: readPct(row.topHoldersPct),
+    isSus: typeof row.isSus === 'boolean' ? row.isSus : null,
+    rugcheckTier:
+      typeof row.rugcheckTier === 'string' &&
+      RUGCHECK_TIERS.has(row.rugcheckTier)
+        ? (row.rugcheckTier as TokenSearchRugcheckTier)
         : null,
   };
 }

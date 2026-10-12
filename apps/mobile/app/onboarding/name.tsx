@@ -6,8 +6,8 @@ import { CorsoText } from '@/src/theme/CorsoText';
 import { FirstRunFrame } from '@/src/features/onboarding/FirstRunFrame';
 import {
   FIRST_RUN_ROUTES,
-  PORTFOLIO_NAME_DEFAULT,
   PORTFOLIO_NAME_MAX,
+  portfolioNamePlaceholder,
 } from '@/src/features/onboarding/firstRunOnboarding';
 import { savePortfolioName } from '@/src/features/onboarding/portfolioNameStore';
 import { IcyCta, QuietSecondary } from '@/src/ui/quiet/QuietButtons';
@@ -18,6 +18,7 @@ import { ETHENA_ACCESSIBLE_RIM, ethena } from '@/constants/theme.ethena';
 import { ethenaGeometry } from '@/constants/theme.ethenaGeometry';
 import { useInkContrastEnabled } from '@/src/ui/glass/useInkContrast';
 import { useEthenaMaterial } from '@/src/ui/ethena/useEthenaMaterial';
+import { readWealthV1BuildFlag } from '@/src/features/wealth/wealthEnv';
 
 export default function FirstRunNameScreen() {
   const [name, setName] = useState('');
@@ -63,7 +64,7 @@ export default function FirstRunNameScreen() {
         testID="first-run-name-field"
         value={name}
         onChangeText={setName}
-        placeholder={PORTFOLIO_NAME_DEFAULT}
+        placeholder={portfolioNamePlaceholder(readWealthV1BuildFlag())}
         placeholderTextColor={ethena.ink.secondary}
         maxLength={PORTFOLIO_NAME_MAX}
         accessibilityLabel={copy.firstRun.nameA11y}
@@ -77,18 +78,20 @@ export default function FirstRunNameScreen() {
           },
         ]}
       />
-      <View
-        testID="first-run-name-chips"
-        style={styles.chips}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        {copy.firstRun.namePreview.map((label) => (
-          <View key={label} style={[styles.chip, trayPaint]}>
-            <CorsoText style={styles.chipLabel}>{label}</CorsoText>
-          </View>
-        ))}
-      </View>
+      {readWealthV1BuildFlag() ? null : (
+        <View
+          testID="first-run-name-chips"
+          style={styles.chips}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {copy.firstRun.namePreview.map((label) => (
+            <View key={label} style={[styles.chip, trayPaint]}>
+              <CorsoText style={styles.chipLabel}>{label}</CorsoText>
+            </View>
+          ))}
+        </View>
+      )}
     </FirstRunFrame>
   );
 }

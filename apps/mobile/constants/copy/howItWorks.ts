@@ -16,7 +16,7 @@ const beats = {
   },
   verdict: {
     headline: 'Get a straight answer.',
-    body: 'A verdict with its reasons: who holds it, whether the liquidity is locked, what the chart is doing.',
+    body: 'A verdict with its reasons: who holds it, whether the pool money is locked, what the chart is doing.',
   },
   sign: {
     headline: 'Nothing moves without you.',
@@ -37,7 +37,6 @@ export const howItWorksCopy = {
 
   skip: 'Skip',
   next: 'Next',
-  /** Every beat's fixture caption, so no demo value reads as a live quote. */
   example: 'Example',
   startAsking: 'Go to Home',
   /** Beat 5 only, beside `Go to Home`. → `/profile/ai`, then Home. */
@@ -65,7 +64,7 @@ export const howItWorksCopy = {
     verdictSources: {
       question: 'Where do verdicts come from?',
       answer:
-        'On-chain reads for mint and freeze authority, RugCheck for the liquidity lock, and Birdeye for holders. Each reason shows where it came from.',
+        "Solana's public records show whether more can be made or tokens can be frozen. RugCheck shows whether the pool money is locked. Birdeye shows the holders. Each reason says where it came from.",
     },
     riskScale: {
       question: 'What does Risk 2/10 mean?',

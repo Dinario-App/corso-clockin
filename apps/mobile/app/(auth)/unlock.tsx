@@ -1,3 +1,4 @@
+import { swapUnlockDestination } from '@/src/features/swap/lockResume';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
@@ -142,7 +143,7 @@ export default function UnlockScreen() {
     }
     if (result === 'error') setError(copy.lock.errorDeviceAuth);
     if (action.door === 'passcode') openPasscode();
-    if (action.navigate === 'app') router.replace('/(app)');
+    if (action.navigate === 'app') router.replace(swapUnlockDestination(session));
   }
 
   async function onPasscodeUnlock(code: string) {
@@ -155,7 +156,7 @@ export default function UnlockScreen() {
     try {
       if (await unlockWithPasscode(code)) {
         setPasscodeOpen(false);
-        router.replace('/(app)');
+        router.replace(swapUnlockDestination(session));
         return;
       }
       setPasscode('');
@@ -257,7 +258,7 @@ export default function UnlockScreen() {
   if (!session) return <Redirect href="/(auth)/welcome" />;
   if (needsLockSetup) return <Redirect href="/(auth)/lock-setup" />;
   if (shouldLeaveLockRoute({ locked, promptInFlight })) {
-    return <Redirect href="/(app)" />;
+    return <Redirect href={swapUnlockDestination(session)} />;
   }
 
   return (

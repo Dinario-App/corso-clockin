@@ -215,9 +215,9 @@ function factWord(
   switch (fact.key) {
     case 'mint_authority':
     case 'freeze_authority':
-      if (fact.level === 'ok') return C.values.renounced;
-      if (fact.level === 'danger') return C.values.active;
-      return trusted ? C.values.active : null;
+      if (fact.level === 'ok') return C.values.authorityNo;
+      if (fact.level === 'danger') return C.values.authorityYes;
+      return trusted ? C.values.authorityYes : null;
     case 'permanent_delegate':
       return fact.level === 'ok' ? null : C.values.delegate;
     case 'default_frozen':
@@ -625,7 +625,6 @@ function discoverFactText(fact: SafetyCatalogFact): string | null {
   switch (fact.key) {
     case 'mint_authority':
     case 'freeze_authority':
-      return `${short} ${C.values.active.toLowerCase()}`;
     case 'permanent_delegate':
     case 'default_frozen':
     case 'transfer_hook':

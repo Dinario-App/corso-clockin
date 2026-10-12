@@ -168,6 +168,7 @@ export function EthenaPill({
   style,
   disabled = false,
   accessibilityLabel,
+  accessibilityHint,
 }: {
   testID: string;
   label: string;
@@ -176,6 +177,8 @@ export function EthenaPill({
   style?: ViewStyle;
   disabled?: boolean;
   accessibilityLabel?: string;
+  /** What pressing does, when the label alone doesn't say (a retry's reason). */
+  accessibilityHint?: string;
 }) {
   const material = resolveEthenaMaterial(plane);
   const { fontScale } = useWindowDimensions();
@@ -217,6 +220,7 @@ export function EthenaPill({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       style={[fitted, style]}
     >

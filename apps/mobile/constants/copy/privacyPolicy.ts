@@ -125,7 +125,7 @@ export const privacyPolicyCopy = {
           text: " (in Account, when you aren't signed in with email, Apple or Google) erases an imported recovery phrase, your conversations and your AI sign-ins from this phone, and disconnects a connected wallet. It deletes nothing on Corso's servers. Only your own backup brings an erased phrase back.",
         },
         {
-          text: 'Remove a connected AI in Your AI. Press and hold a conversation to delete it.',
+          text: "Turn Corso's assistant off in Settings. Press and hold a conversation to delete it.",
         },
         {
           text: 'Or ask at corso.trade/delete or support@corso.trade.',

@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useRef, useState } from 'react';
 import { Redirect, router } from 'expo-router';
-import { Image, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Image, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { usePrivy } from '@privy-io/expo';
@@ -11,6 +11,10 @@ import {
   DeleteAccountIncompleteNotice,
   readDeleteAccountIncompleteNotice,
 } from '@/src/features/account/deleteAccountIncompleteNotice';
+import { LiveDeskCard } from '@/src/features/liveDesk/LiveDeskCard';
+import { resolveHowItWorksPageFadeBottom } from '@/src/features/howItWorks/howItWorksPresentation';
+import { ScrollEdgeFade } from '@/src/ui/primitives/ScrollEdgeFade';
+import { useScrollLinkedFadeTop } from '@/src/ui/primitives/useScrollLinkedFadeTop';
 import { useCorsoSession } from '@/src/features/session/SessionContext';
 import {
   resolveWelcomeDoorAccessibility,
@@ -35,6 +39,7 @@ import { EthenaGround, EthenaTray } from '@/src/ui/ethena/EthenaPrimitives';
 import { ethena } from '@/constants/theme.ethena';
 import { ethenaGeometry } from '@/constants/theme.ethenaGeometry';
 import { ETHENA_TYPE } from '@/constants/theme.ethenaType';
+import { readWealthV1BuildFlag } from '@/src/features/wealth/wealthEnv';
 
 export default function WelcomeScreen() {
   const {
@@ -52,6 +57,12 @@ export default function WelcomeScreen() {
     setDeleteAccountIncompleteNoticeVisible,
   ] = useState(readDeleteAccountIncompleteNotice);
   const onboardingAnnounced = useRef(false);
+  const scrollFade = useScrollLinkedFadeTop();
+  const [overflow, setOverflow] = useState({
+    contentHeight: 0,
+    viewportHeight: 0,
+    scrollY: 0,
+  });
   useEffect(() => {
     if (onboardingAnnounced.current) return;
     if (
@@ -123,6 +134,7 @@ export default function WelcomeScreen() {
   }
 
   const disabled = !privyReady;
+  const wealthV1 = readWealthV1BuildFlag();
   const googleA11y = resolveWelcomeDoorAccessibility({
     disabled,
     primaryLabel: copy.welcome.ctaGoogle,
@@ -153,21 +165,91 @@ export default function WelcomeScreen() {
           onDismiss={() => setDeleteAccountIncompleteNoticeVisible(false)}
         />
         <View style={styles.doorBody} testID="welcome-column">
-          <Image
-            testID="welcome-lockup"
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel={copy.welcome.wordmark}
-            source={require('@/assets/brand/pari/2-pari-lockup-128h.png')}
-            resizeMode="contain"
-            style={styles.lockup}
-          />
-          <CorsoText accessibilityRole="header" style={styles.title}>
-            {copy.quietMark.line}
-          </CorsoText>
-          <CorsoText testID="welcome-subline" style={styles.subLine}>
-            {copy.quietMark.subLine}
-          </CorsoText>
+          <View style={styles.scrollRegion} testID="welcome-scroll-region">
+            <ScrollView
+              testID="welcome-scroller"
+              {...scrollFade.scroller}
+              // After the spread: it still drives the top fade, and also tracks
+              // the offset the bottom fade reads.
+              onScroll={(event) => {
+                scrollFade.scroller.onScroll(event);
+                const scrollY = event.nativeEvent.contentOffset.y;
+                setOverflow((prev) =>
+                  prev.scrollY === scrollY ? prev : { ...prev, scrollY },
+                );
+              }}
+              onLayout={(event) => {
+                const viewportHeight = event.nativeEvent.layout.height;
+                setOverflow((prev) =>
+                  prev.viewportHeight === viewportHeight
+                    ? prev
+                    : { ...prev, viewportHeight },
+                );
+              }}
+              onContentSizeChange={(_, contentHeight) => {
+                setOverflow((prev) =>
+                  prev.contentHeight === contentHeight
+                    ? prev
+                    : { ...prev, contentHeight },
+                );
+              }}
+              style={styles.scroller}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              contentInsetAdjustmentBehavior="never"
+            >
+              <Image
+                testID="welcome-lockup"
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={copy.welcome.wordmark}
+                source={require('@/assets/brand/pari/2-pari-lockup-128h.png')}
+                resizeMode="contain"
+                style={styles.lockup}
+              />
+              <View style={styles.liveDesk} testID="welcome-live-desk-slot">
+                <LiveDeskCard plane="float" testID="welcome-live-desk" />
+              </View>
+            </ScrollView>
+            <ScrollEdgeFade
+              top={scrollFade.top}
+              bottom={0}
+              color={ethena.groundStops[0][1]}
+              testID="welcome-fade-top"
+            />
+            <ScrollEdgeFade
+              top={0}
+              bottom={resolveHowItWorksPageFadeBottom(overflow)}
+              color={ethena.void}
+              testID="welcome-fade-bottom"
+            />
+          </View>
+
+          {wealthV1 ? (
+            <>
+              <CorsoText
+                accessibilityRole="header"
+                style={[styles.title, styles.centred]}
+              >
+                {copy.wealthV1.welcome.line}
+              </CorsoText>
+              <CorsoText
+                testID="welcome-subline"
+                style={[styles.subLine, styles.centred]}
+              >
+                {`${copy.wealthV1.welcome.sub}\n${copy.wealthV1.welcome.promise}`}
+              </CorsoText>
+            </>
+          ) : (
+            <>
+              <CorsoText accessibilityRole="header" style={styles.title}>
+                {copy.quietMark.line}
+              </CorsoText>
+              <CorsoText testID="welcome-subline" style={styles.subLine}>
+                {copy.quietMark.subLine}
+              </CorsoText>
+            </>
+          )}
 
           <View style={styles.floor} />
 
@@ -252,16 +334,26 @@ const styles = StyleSheet.create({
   },
   root: { flex: 1, backgroundColor: ethena.void },
   safe: { flex: 1 },
+  scrollRegion: { flexShrink: 1, minHeight: 0 },
+  scroller: { flexGrow: 0, flexShrink: 1 },
+  scrollContent: {},
+  /** The open space, between the line and the sign-in group. */
+  floor: { flexGrow: 1 },
   doorBody: {
     flex: 1,
     paddingHorizontal: ethenaGeometry.gutter,
     paddingBottom: 8,
   },
+  /**
+   * The large left-aligned page title, the ladder's `title` rung.
+   * Figma sets it 60dp under the status bar and 24dp above the tray.
+   */
   lockup: {
-    marginTop: 60,
+    marginTop: 16,
     width: WELCOME_LOCKUP.width,
     height: WELCOME_LOCKUP.height,
   },
+  liveDesk: { marginTop: 16 },
   /** The line on the ladder's `title` rung, 24dp under the lockup and above what follows. */
   title: {
     ...ETHENA_TYPE.title,
@@ -279,6 +371,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     color: ethena.ink.secondary,
   },
+  centred: { textAlign: 'center' },
   /** The sign-in group: the provider buttons and the email tray, 12 between. */
   signIn: { gap: 12 },
   /** The provider pair: 12 between, the CTA-pair rhythm of the app. */
@@ -290,8 +383,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     overflow: 'hidden',
   },
-  /** The open space, between the text and the sign-in group. */
-  floor: { flexGrow: 1 },
   legalBlock: {
     marginTop: 16,
     flexDirection: 'row',

@@ -1,6 +1,10 @@
 import { copy } from '@/constants/copy';
 import { BALANCE_MASK } from '@/src/ui/format/balanceMask';
 import type { DeltaDirection } from '@/src/ui/ethena/deltaInk';
+import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
 import { formatAtomicAmount } from '@/src/features/swap/tokens';
 import { formatFiatAmount, formatPriceUsd } from '@/src/ui/format/numberCraft';
 import {
@@ -13,6 +17,7 @@ import {
 } from './computeFiatTotal';
 import { readHeldBalance, type HoldingsBook } from './holdingsBook';
 import { classifyHolding, getMajorAsset } from './majors';
+import { consumerTokenName } from './majorNames';
 
 export const BOOK_SET_PILLS = ['1D', '1W', '1M', '6M', '1Y', 'All'] as const;
 export type BookSetPill = (typeof BOOK_SET_PILLS)[number];
@@ -271,10 +276,15 @@ export function presentSpineDetail(args: {
   swapsOff: boolean;
   sellWithheldNote: string | null;
   hideBalances?: boolean;
+  failState?: ReadFailState;
 }): SpineDetailModel {
   const asset = getMajorAsset(args.mint);
   const symbol = asset?.symbol ?? args.symbol;
-  const displayName = asset?.displayName ?? args.displayName;
+  const displayName = consumerTokenName({
+    mint: args.mint,
+    symbol,
+    name: args.displayName,
+  });
   const read = readHeldBalance(args.book, args.mint);
   const knownHeld = read.known && read.atomic > 0n;
   const loading = args.book.status === 'loading';
@@ -343,6 +353,11 @@ export function presentSpineDetail(args: {
     }
   }
 
+  const priceUnavailable = heroText === copy.majorDetail.priceUnavailable;
+  if (priceUnavailable) {
+    heroText = readFailLine(args.failState, copy.majorDetail.priceUnavailable);
+  }
+
   const staleLine =
     freshness === 'stale' && args.quote
       ? `${copy.majorDetail.priceStale} · ${agePhrase(args.nowMs - args.quote.asOfMs)}`
@@ -357,6 +372,10 @@ export function presentSpineDetail(args: {
     swapDirections: args.swapDirections,
     sellWithheldNote: args.sellWithheldNote,
   });
+  const floorNote =
+    doors.floorNote === copy.majorDetail.bookUnavailable
+      ? readFailLine(args.failState, doors.floorNote)
+      : doors.floorNote;
 
   return {
     displayName,
@@ -369,7 +388,7 @@ export function presentSpineDetail(args: {
     staleLine,
     shareText,
     wrapperText: wrapperText(args.mint),
-    floorNote: doors.floorNote,
+    floorNote,
     buy: doors.buy,
     sell: doors.sell,
     spanLabel: labelBookSetSpan(
@@ -379,7 +398,7 @@ export function presentSpineDetail(args: {
       args.chartBarMs ?? null,
     ),
     selectedPill: args.pill,
-    priceUnavailable: heroText === copy.majorDetail.priceUnavailable,
+    priceUnavailable,
     explainShown: !loading,
   };
 }
@@ -426,6 +445,55 @@ function doorsFor(args: {
     buy: { shown: true, disabled: !buyReady },
     sell: { shown: canSell, disabled: !canSell },
     floorNote: canSell ? null : args.sellWithheldNote,
+  };
+}
+
+export function presentMarketHead(args: {
+  mint: string;
+  quote: PriceQuote | null | undefined;
+  priceThen: string | null;
+  nowMs: number;
+  failState?: ReadFailState;
+}): {
+  priceText: string;
+  priceUnavailable: boolean;
+  deltaLine: string | null;
+  deltaDirection: DeltaDirection;
+  staleLine: string | null;
+} {
+  const freshness = quoteFreshness(args.quote, args.mint, args.nowMs);
+  const priceText =
+    (freshness === 'ok' || freshness === 'stale') && args.quote
+      ? formatPriceUsd(args.quote.price)
+      : null;
+  if (!priceText || !args.quote) {
+    return {
+      priceText: readFailLine(args.failState, copy.majorDetail.priceUnavailable),
+      priceUnavailable: true,
+      deltaLine: null,
+      deltaDirection: null,
+      staleLine: null,
+    };
+  }
+  const symbol = getMajorAsset(args.mint)?.symbol ?? '';
+  const delta =
+    freshness === 'ok'
+      ? positionDelta({
+          atomic: null,
+          symbol,
+          priceNow: args.quote.price,
+          priceThen: args.priceThen,
+        })
+      : null;
+  return {
+    priceText,
+    priceUnavailable: false,
+    deltaLine: delta?.line ?? null,
+    deltaDirection: delta?.direction ?? null,
+    staleLine:
+      freshness === 'stale'
+        ? `${copy.majorDetail.priceStale} · ${agePhrase(args.nowMs - args.quote.asOfMs)}`
+        : null,
   };
 }
 

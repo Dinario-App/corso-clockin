@@ -1,18 +1,18 @@
 export const readRingCopy = {
   /** The eight check labels, in ring order (clockwise from 12). */
   checks: {
-    mintAuthority: 'Mint authority',
-    freezeAuthority: 'Freeze authority',
+    mintAuthority: 'Can more be made',
+    freezeAuthority: 'Can it be frozen',
     tokenExtensions: 'Token extensions',
-    rugPulled: 'Rug pulled',
+    rugPulled: 'Pool emptied',
     top10Holders: 'Top-10 holders',
     devHolds: 'Dev holds',
-    snipersInsiders: 'Snipers & insiders',
-    liquidityPool: 'Liquidity pool',
+    snipersInsiders: 'Launch bots and insiders',
+    liquidityPool: 'Money in the pool',
   },
   values: {
-    renounced: 'Renounced',
-    active: 'Active',
+    authorityNo: 'No',
+    authorityYes: 'Yes',
     noneFlagged: 'None flagged',
     notFlagged: 'Not flagged',
     flagged: 'Flagged',
@@ -29,19 +29,19 @@ export const readRingCopy = {
     topHolder: (pct: string) => `Top holder ${pct}`,
     insiders: (pct: string) => `Insiders ${pct}`,
     bundles: (pct: string) => `Bundles ${pct}`,
-    snipers: (pct: string) => `Snipers ${pct}`,
+    snipers: (pct: string) => `Launch bots ${pct}`,
     lowLiquidity: (usd: string) => `Low ${usd}`,
     /** The cells of a read that did not answer at all. */
     notRead: 'Not read',
     unknown: 'Unknown',
   },
   /** Coverage counts the SOURCES that answered, never the values they carried. */
-  coverage: (n: number) => `${n} of 8 checks read`,
-  coverageShort: (n: number) => `${n}/8 read`,
+  coverage: (n: number) => `${n} of 8 checks done`,
+  coverageShort: (n: number) => `${n} of 8 done`,
   notReadCount: (n: number) => `${n} not read`,
   /** Pinned equal to the api `SAFETY_FLAG_COPY.onchainReadUnavailable`. */
-  onchainDidntRun: "On-chain read didn't run",
-  rugCheckDidntRun: "Rug check didn't run",
+  onchainDidntRun: "The token record check didn't run",
+  rugCheckDidntRun: "The Solana Tracker check didn't run",
   /** Pinned equal to the api `SAFETY_FLAG_COPY.checksUnavailable`. */
   checksDidntRun: "Checks didn't run",
   nothingCountedAsFine:
@@ -49,7 +49,7 @@ export const readRingCopy = {
   reasons: {
     green: (unknownCells: number) =>
       unknownCells === 0
-        ? "8 checks read, nothing flagged. That's not a guarantee."
+        ? "8 checks done, nothing flagged. That's not a guarantee."
         : unknownCells === 1
           ? "Nothing flagged, but 1 check came back without a value. That's not a guarantee."
           : `Nothing flagged, but ${unknownCells} checks came back without a value. That's not a guarantee.`,
@@ -58,52 +58,52 @@ export const readRingCopy = {
         ? '1 check found something worth reading before you trade.'
         : `${n} checks found something worth reading before you trade.`,
     danger: {
-      freeze: 'Freeze authority is active. Whoever holds it can freeze your tokens.',
+      freeze: 'Someone can freeze this token, including what you hold.',
       delegate:
         'Someone other than you can move or burn the tokens in your wallet.',
-      mint: 'Mint authority is active. Whoever holds it can create more of this token.',
+      mint: 'Someone can make more of this token.',
       defaultFrozen: 'New accounts for this token start frozen.',
-      rugged: 'Solana Tracker flags this token as rugged.',
+      rugged: "Solana Tracker reports no money is left in this token's pool.",
       nonTransferable:
         'This token cannot be transferred. Whoever holds it cannot sell it or move it.',
       pausable:
-        'A pause authority is active. Whoever holds it can stop anyone from selling or moving this token.',
+        'Someone can pause this token and stop anyone from selling or moving it.',
       paused:
-        'This token is paused right now. Nobody can sell it or move it until the authority lifts the pause.',
+        "This token is paused right now. Nobody can sell or move it until it's unpaused.",
     },
     unread: "Our checks didn't run just now. This isn't a verdict.",
     partialCore:
-      "The on-chain read ran. The rug check didn't, so no verdict yet.",
+      "The token record check ran. The Solana Tracker check didn't, so no verdict yet.",
     partialEnrichment:
-      "The rug check ran. The on-chain read didn't, so no verdict yet.",
-    suffixRug: "The rug check didn't run.",
-    suffixOnchain: "The on-chain read didn't run.",
+      "The Solana Tracker check ran. The token record check didn't, so no verdict yet.",
+    suffixRug: "The Solana Tracker check didn't run.",
+    suffixOnchain: "The token record check didn't run.",
   },
   footnote:
-    "Corso reads on-chain data, Solana Tracker and market data. It doesn't check the team, their socials or what the creator does next. Information, not advice.",
+    "Corso reads Solana's public records, Solana Tracker and market data. It doesn't check the team, their socials or what the creator does next. Information, not advice.",
   jupiterVerified: 'Jupiter verified',
   ringA11y: (read: number, flagged: number) =>
     read === 0
-      ? '0 of 8 checks read.'
-      : `${read} of 8 checks read. ${flagged} flagged.`,
+      ? '0 of 8 checks done.'
+      : `${read} of 8 checks done. ${flagged} flagged.`,
   discoverShort: {
     top10: 'top-10',
     topHolder: 'top holder',
     dev: 'dev',
-    snipers: 'snipers',
+    snipers: 'launch bots',
     insiders: 'insiders',
     bundles: 'bundles',
-    freeze: 'freeze authority',
-    mint: 'mint authority',
+    freeze: 'can be frozen',
+    mint: 'more can be made',
     delegate: 'permanent delegate',
     startsFrozen: 'starts frozen',
-    hook: 'transfer hook',
+    hook: 'extra transfer rules',
     fee: 'fee',
     nonTransferable: 'cannot be transferred',
     pausable: 'can be paused',
     paused: 'paused now',
-    rugged: 'flagged as rugged',
-    lp: 'LP',
-    lowLiquidity: 'low liquidity',
+    rugged: 'pool emptied',
+    lp: 'pool',
+    lowLiquidity: 'thin market',
   },
 } as const;

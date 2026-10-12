@@ -5,6 +5,11 @@ import { goBackOr } from '@/src/features/navigation/goBackOr';
 import { BACK_FALLBACK } from '@/src/features/navigation/guardedBack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { copy } from '@/constants/copy';
+import { readFailLine } from '@/src/features/connectivity/connectivity';
+import {
+  useOnReconnect,
+  useReadFailState,
+} from '@/src/features/connectivity/useConnectivity';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { formatClosedBarStamp } from '@/src/features/home/asOfPresentation';
@@ -68,6 +73,10 @@ export default function FullChartScreen() {
   const chartArmed = useLaneGate('fullChart');
   const displayNowMs = useDisplayClock({ enabled: chartArmed });
   const { reduceMotion } = useAccessibilityPreference();
+  const failState = useReadFailState();
+  useOnReconnect(() => {
+    if (chart.status === 'unavailable') chart.refresh();
+  });
 
   // Painted-timeframe transition. Keyed on the bundle's own timeframe (not the
   // pill), so the dip lands when the new bars arrive, never on a stale tape.
@@ -324,7 +333,7 @@ export default function FullChartScreen() {
                         : noData
                           ? copy.fullChart.noData(timeframeName)
                           : chart.status === 'unavailable'
-                            ? copy.fullChart.unavailable
+                            ? readFailLine(failState, copy.fullChart.unavailable)
                             : copy.fullChart.loading}
                   </CorsoText>
                   {chart.status === 'unavailable' && !noData ? (

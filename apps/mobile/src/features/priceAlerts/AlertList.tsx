@@ -1,4 +1,3 @@
-import { typography } from '@/src/ui/tokens';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { copy } from '@/constants/copy';
 import { ethena } from '@/constants/theme.ethena';
@@ -9,7 +8,13 @@ import {
   ACCOUNT_CARD_PADDING_HORIZONTAL,
   ACCOUNT_CARD_PADDING_VERTICAL,
 } from '@/src/ui/rows/accountRowPresentation';
-import { ALERT_COPY, alertLine, safeAlertSymbol } from './alertCopy';
+import { MIN_TAP_TARGET_PT } from '@/src/ui/primitives/tapTargetPresentation';
+import {
+  ALERT_COPY,
+  alertLine,
+  firedInboxLine,
+  safeAlertSymbol,
+} from './alertCopy';
 import type { useAlertList } from './useAlertList';
 export function AlertList({ data }: { data: ReturnType<typeof useAlertList> }) {
   if (!data.armed) return null;
@@ -68,24 +73,28 @@ export function AlertList({ data }: { data: ReturnType<typeof useAlertList> }) {
             testID={`price-alert-fired-${event.alertId}`}
             style={styles.text}
           >
-            {token(event.alertId, event.mint)
-              ? alertLine(
-                  'fired',
-                  token(event.alertId, event.mint)!,
-                  event.direction,
-                  event.thresholdPrice,
-                  new Date(event.firedAtMs).toLocaleString(undefined, {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                  }),
-                )
-              : ALERT_COPY.off}
+            {event.line
+              ? firedInboxLine(event.line, firedTime(event.firedAtMs))
+              : token(event.alertId, event.mint)
+                ? alertLine(
+                    'fired',
+                    token(event.alertId, event.mint)!,
+                    event.direction,
+                    event.thresholdPrice,
+                    firedTime(event.firedAtMs),
+                  )
+                : ALERT_COPY.off}
           </CorsoText>
         </SettingsCard>
       ))}
     </View>
   );
 }
+const firedTime = (ms: number) =>
+  new Date(ms).toLocaleString(undefined, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
 const styles = StyleSheet.create({
   text: { ...ETHENA_TYPE.body, color: ethena.ink.primary },
   state: { ...ETHENA_TYPE.body, color: ethena.ink.tertiary },
@@ -93,5 +102,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: ACCOUNT_CARD_PADDING_HORIZONTAL,
     paddingVertical: ACCOUNT_CARD_PADDING_VERTICAL,
   },
-  remove: { minHeight: typography.control, justifyContent: 'center' },
+  remove: { minHeight: MIN_TAP_TARGET_PT, justifyContent: 'center' },
 });

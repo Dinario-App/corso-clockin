@@ -12,6 +12,10 @@ import {
 } from '@/src/features/prices/fetchPriceHistory';
 import { formatObservationClock } from '@/src/features/home/asOfPresentation';
 import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
+import {
   formatChartAmountChange,
   formatChartPercentChange,
   formatChartPriceUsd,
@@ -475,6 +479,7 @@ export function resolvePriceChartHistoryPresentation(input: {
   height: number;
   scrubIndex: number | null;
   condensed?: boolean;
+  failState?: ReadFailState;
 }): PriceChartPresentation {
   const presentation = resolvePriceChartPresentation({
     series: input.history.status === 'ready' ? input.history.series : null,
@@ -488,6 +493,9 @@ export function resolvePriceChartHistoryPresentation(input: {
     ...presentation,
     ...(presentation.kind === 'stub' && input.history.status === 'loading'
       ? { message: copy.chart.historyLoading }
+      : null),
+    ...(presentation.kind === 'stub' && input.history.status === 'unavailable'
+      ? { message: readFailLine(input.failState, presentation.message) }
       : null),
     attribution: resolvePriceHistoryAttribution(input.history),
   };

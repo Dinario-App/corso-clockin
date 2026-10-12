@@ -26,6 +26,12 @@ import { BOOT_SPLASH_TIMEOUT_MS } from '@/src/features/session/sessionGate';
 import { eraseDormantAiSignInsAtLaunch } from '@/src/features/session/localClearRegistry';
 import { InkContrastProvider } from '@/src/ui/glass/useInkContrast';
 import { SessionLockBoundary } from '@/src/features/session/SessionLockBoundary';
+import { OfflineBanner } from '@/src/features/connectivity/OfflineBanner';
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
+import { startConnectivityWatch } from '@/src/features/connectivity/connectivity';
 import { resolveSessionRouteGuard } from '@/src/features/session/sessionRouteGuard';
 import { useLaneGatesHost } from '@/src/features/navigation/laneGates';
 import { readGrokbotRoutesFlag } from '@/src/features/navigation/grokbotRoutes';
@@ -59,6 +65,8 @@ export { RootErrorBoundary as ErrorBoundary } from '@/src/features/reliability/R
 const { appId, clientId } = requirePrivyEnv();
 const mfaRelyingParty = optionalMfaRelyingParty();
 
+startConnectivityWatch();
+
 // Hold splash until bundled Inter is ready (local assets — no network fetch).
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* non-fatal if splash API is unavailable in a given host */
@@ -85,9 +93,11 @@ function RootNavigator({
 
   return (
     <>
+      <OfflineBanner />
       {sessionRoutesEnabled ? (
         <RevokeSessionNotice walletAddress={session?.address ?? null} />
       ) : null}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -151,6 +161,7 @@ function RootNavigator({
           </Stack.Protected>
         </Stack.Protected>
       </Stack>
+      </SafeAreaProvider>
     </>
   );
 }

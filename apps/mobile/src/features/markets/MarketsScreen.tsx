@@ -1,3 +1,5 @@
+import { usePlainRisk } from '@/src/features/plainRisk/usePlainRisk';
+import { RiskLevelSlot, spokenRiskLevel } from '@/src/ui/risk/RiskLevel';
 import type { ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { copy } from '@/constants/copy';
@@ -304,14 +306,21 @@ function MovingRowView({
   onOpenRow: (mint: string) => void;
 }) {
   const figure = stale ? ethena.ink.tertiary : ethena.ink.primary;
+  const risk = usePlainRisk(row.mint);
   // The spoken change carries its sign: the glyph that shows direction is
   // not read aloud.
   const spokenChange = row.change
     ? `${row.change.direction === 'down' ? '-' : row.change.direction === 'up' ? '+' : ''}${row.change.text}`
     : null;
-  const a11y = spokenChange
-    ? copy.moving.rowLabel(row.symbol, row.price, spokenChange)
-    : [row.symbol, row.price].join(', ');
+  const spokenRisk = spokenRiskLevel(risk);
+  const a11y = [
+    spokenChange
+      ? copy.moving.rowLabel(row.symbol, row.price, spokenChange)
+      : [row.symbol, row.price].join(', '),
+    spokenRisk,
+  ]
+    .filter((part): part is string => part != null)
+    .join(', ');
   return (
     <View>
       <Pressable
@@ -326,12 +335,18 @@ function MovingRowView({
           columnGap: 12,
         }}
       >
-        <CorsoText
-          numberOfLines={1}
-          style={{ ...ETHENA_TYPE.rowName, color: figure, flexShrink: 1 }}
-        >
-          {row.symbol}
-        </CorsoText>
+        <View style={{ flexShrink: 1, rowGap: 2 }}>
+          <CorsoText
+            numberOfLines={1}
+            style={{ ...ETHENA_TYPE.rowName, color: figure }}
+          >
+            {row.symbol}
+          </CorsoText>
+          <RiskLevelSlot
+            read={risk}
+            testID={`markets-moving-row-${row.key}-risk`}
+          />
+        </View>
         <View style={{ flex: 1 }} />
         <CorsoText style={{ ...ETHENA_TYPE.rowValue, color: figure }}>
           {row.price}

@@ -53,6 +53,10 @@ export function canonNumerals(): TextStyle['fontVariant'] {
   return [...typography.fontVariantNumerals] as TextStyle['fontVariant'];
 }
 
+export function tabularNumerals(): TextStyle['fontVariant'] {
+  return [...typography.fontVariantTabular];
+}
+
 /**
  * `-.01em` and friends, resolved to the points RN wants. CSS `em` is relative
  * to the element's own size, so tracking has to be computed per style rather

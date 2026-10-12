@@ -2,6 +2,10 @@ import { copy } from '@/constants/copy';
 import { MAJOR_ASSETS, type MajorAsset } from '@/src/features/balances/majors';
 import type { PriceSnapshot } from '@/src/features/balances/priceSnapshot';
 import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
+import {
   formatObservationClock,
   resolveMovingContext,
 } from '@/src/features/home/asOfPresentation';
@@ -81,6 +85,7 @@ export function presentMarketsMoving(args: {
   prices: MarketsPricesRead;
   changes: MarketsChangeRead;
   nowMs: number;
+  failState?: ReadFailState;
   why?: WhyRead;
 }): MarketsMovingModel {
   const whyResponse =
@@ -99,13 +104,19 @@ export function presentMarketsMoving(args: {
   const unavailable: MarketsMovingModel = {
     kind: 'unavailable',
     label,
-    line: copy.diyLists.pricesUnavailable,
+    line: readFailLine(args.failState, copy.diyLists.pricesUnavailable),
   };
   // Markets has nothing else to show: with prices off the section still says
-  // one honest line rather than leaving a titled, empty screen.
-  if (prices.phase === 'off') return unavailable;
+  // one honest line rather than leaving a titled, empty screen. Off is the
+  // flag, not a failed read, so it never defers to the offline state.
+  const off: MarketsMovingModel = {
+    ...unavailable,
+    line: copy.diyLists.pricesUnavailable,
+  };
+  if (prices.phase === 'off') return off;
   const snapshot = prices.snapshot;
-  if (!snapshot || snapshot.status === 'disabled') return unavailable;
+  if (snapshot?.status === 'disabled') return off;
+  if (!snapshot) return unavailable;
 
   const rows: MarketsMovingRow[] = [];
   let oldestAsOfMs = Number.POSITIVE_INFINITY;

@@ -173,7 +173,9 @@ function BuyPickerRowView({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={row.price ? `${row.name}, ${row.price}` : row.name}
+      accessibilityLabel={[row.name, row.sub, row.price]
+        .filter(Boolean)
+        .join(', ')}
       onPress={onPress}
     >
       <EthenaTray
@@ -202,7 +204,7 @@ function BuyPickerRowView({
           <CorsoText
             style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.tertiary }}
           >
-            {row.symbol}
+            {row.sub}
           </CorsoText>
         </View>
         {row.price ? (

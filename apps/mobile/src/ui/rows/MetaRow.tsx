@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { Text, View, type TextStyle } from 'react-native';
+import { tabularNumerals } from '@/src/ui/cards/canonType.js';
 import {
   META_ROW_INFO_MARK,
   resolveMetaRowPresentation,
@@ -15,6 +16,8 @@ export type MetaRowProps = {
   emphasis: MetaRowEmphasis;
   testID?: string;
 };
+
+const VALUE_NUMERALS: TextStyle = { fontVariant: tabularNumerals() };
 
 export function MetaRow({
   label,
@@ -47,7 +50,10 @@ export function MetaRow({
           </Text>
         ) : null}
       </View>
-      <Text style={presentation.valueStyle} accessible={false}>
+      <Text
+        style={[presentation.valueStyle, VALUE_NUMERALS]}
+        accessible={false}
+      >
         {presentation.valueText}
       </Text>
     </View>

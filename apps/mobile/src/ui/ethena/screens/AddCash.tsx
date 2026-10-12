@@ -13,6 +13,7 @@ import { ethenaGeometry } from '@/constants/theme.ethenaGeometry';
 import { ethena } from '@/constants/theme.ethena';
 import { ETHENA_TYPE } from '@/constants/theme.ethenaType';
 import { CorsoText } from '@/src/theme/CorsoText';
+import { tabularNumerals } from '@/src/ui/cards/canonType';
 import { ScreenHeader } from '@/src/ui/navigation/ScreenHeader';
 import {
   EthenaGround,
@@ -267,6 +268,7 @@ const styles = StyleSheet.create({
   input: {
     ...ETHENA_TYPE.rowValue,
     color: ethena.ink.primary,
+    fontVariant: tabularNumerals(),
     minHeight: ethenaGeometry.pillHeight,
     padding: 16,
     borderRadius: 16,

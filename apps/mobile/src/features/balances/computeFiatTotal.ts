@@ -49,6 +49,7 @@ export type PriceQuote = {
   source: string;
   /** Max age consumer may accept; pure layer only compares timestamps. */
   maxAgeMs: number;
+  changePct24h?: number;
 };
 
 export type PriceQuoteMap = Record<string, PriceQuote | null | undefined>;

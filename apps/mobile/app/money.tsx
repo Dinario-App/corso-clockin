@@ -788,6 +788,7 @@ export default function MoneyScreen() {
               fullText={tokenAmountFullLabel}
               style={styles.tokenAmount}
               accessibilityLabel={tokenAmountFullLabel}
+              fitOneLine
             />
             <CorsoText style={styles.holdHint}>{tokenSheet.holdHint}</CorsoText>
             <PriceChart

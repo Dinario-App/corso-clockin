@@ -51,6 +51,9 @@ export function alertLine(
     .replace('{PRICE}', formatAlertThresholdUsd(threshold) ?? '')
     .replace('{TIME}', () => time);
 }
+export function firedInboxLine(line: string, time: string) {
+  return `${line} · ${time}`;
+}
 export function currentPriceLine(token: string, price: string) {
   return ALERT_COPY.current
     .replace('{TOKEN}', () => displaySymbol(token))

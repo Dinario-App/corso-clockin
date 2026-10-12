@@ -32,7 +32,6 @@ export const SETTINGS_UNREACHABLE_HREFS = [
 ] as const;
 
 const FORBIDDEN_SETTINGS_LABELS = [
-  'Select network',
   'Advanced',
   'Import',
   'Connect',
@@ -105,6 +104,9 @@ export type NetworkPresentation = {
   title: string;
   selectClusterTitle: string;
   cluster: SettingsCluster | null;
+  networkUnknown: boolean;
+  networkUnknownLabel: string;
+  networkRetryLabel: string;
   clusterSwitchEnabled: false;
   sheetVisible: boolean;
   clusters: typeof NETWORK_CLUSTERS;
@@ -262,12 +264,18 @@ export function resolveNotificationPreferencesPresentation(): NotificationPrefer
 export function resolveNetworkPresentation(input: {
   cluster: unknown;
   sheetVisible: unknown;
+  networkUnknown?: unknown;
 }): NetworkPresentation {
+  const cluster = normalizeCluster(input.cluster);
   return {
     frame: 'F149',
     title: copy.profile.networkTitle,
     selectClusterTitle: copy.profile.selectCluster,
-    cluster: normalizeCluster(input.cluster),
+    cluster,
+    // A real cluster always wins: `unknown` only ever stands alone.
+    networkUnknown: cluster === null && input.networkUnknown === true,
+    networkUnknownLabel: copy.profile.networkUnknown,
+    networkRetryLabel: copy.profile.networkRetry,
     clusterSwitchEnabled: false,
     sheetVisible: asBoolean(input.sheetVisible),
     clusters: NETWORK_CLUSTERS,

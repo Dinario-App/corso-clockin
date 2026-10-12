@@ -1,17 +1,17 @@
 export const homeCopy = {
   checkMarketData: 'pulling market data',
-  checkLiquidity: 'checking liquidity',
-  checkHolders: 'scanning holder concentration',
+  checkLiquidity: 'checking how much money is in the pool',
+  checkHolders: 'checking how much the biggest holders own',
   /** A landed answer with no backing read uses completed-tense visible copy. */
   checkMarketDataUnavailable: 'market data not read',
-  checkLiquidityUnavailable: 'liquidity not read',
-  checkHoldersUnavailable: 'holder concentration not read',
+  checkLiquidityUnavailable: 'pool money not checked',
+  checkHoldersUnavailable: 'biggest holders not checked',
   /** What assistive tech reads for a check that is still running / done. */
   checkRunningA11y: (label: string) => `${label}, running`,
   checkDoneA11y: (label: string) => `${label}, done`,
   checkUnavailableA11y: (label: string) => `${label}, unavailable`,
   checkFoundMarket: (volume: string) => `${volume} 24h volume`,
-  checkFoundLiquidity: (liquidity: string) => `${liquidity} liquidity`,
+  checkFoundLiquidity: (liquidity: string) => `${liquidity} in the pool`,
   checkFoundHolders: (count: string) => `${count} holders`,
   checkFoundTopTen: (pct: string) => `top 10 hold ${pct}`,
   thoughtFor: (seconds: number) => `Thought for ${seconds}s`,

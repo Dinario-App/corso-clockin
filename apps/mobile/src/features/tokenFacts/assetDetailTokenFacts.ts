@@ -25,6 +25,11 @@ import {
 import type { HeldSellDoor } from '@/src/features/swap/heldSellDoor';
 import { resolveAcquireAccess } from '@/src/features/security/acquireAccessPresentation';
 import type { JurisdictionGateInputs } from '@/src/features/security/jurisdictionGateInputs';
+import {
+  fixedCuratedBook,
+  isCuratedMint,
+  type CuratedBook,
+} from '@/src/features/universe/curatedBook';
 
 export const ASSET_DETAIL_STALENESS_MAX_DELAY_MS = 2_147_483_647;
 
@@ -215,6 +220,7 @@ export function buildAssetDetailTokenFactsModel(args: {
   nowMs: number;
   heldSell?: HeldSellDoor;
   acquireGateInputs?: JurisdictionGateInputs | null;
+  curatedBook?: CuratedBook;
 }): AssetDetailModel {
   const { mint, state, nowMs } = args;
   const facts = state.facts;
@@ -242,6 +248,10 @@ export function buildAssetDetailTokenFactsModel(args: {
     symbol,
     name,
   });
+  const curated = isCuratedMint(
+    args.curatedBook ?? fixedCuratedBook(facts?.cluster ?? null),
+    mint,
+  );
   const swapActions =
     doorsEligible
       ? buildAssetSwapActions({
@@ -251,12 +261,18 @@ export function buildAssetDetailTokenFactsModel(args: {
           cluster: facts.cluster,
           ...(args.heldSell ? { heldSell: args.heldSell } : {}),
           acquireAccess,
+          curated,
         })
       : [];
   const acquireRefusedNote =
     doorsEligible && acquireAccess.kind === 'refused'
       ? acquireAccess.note
-      : null;
+      : doorsEligible &&
+          !curated &&
+          args.curatedBook != null &&
+          swapActions.some((action) => action.direction === 'sell')
+        ? copy.tokenDetail.notOffered
+        : null;
   const panel = buildSwapReviewFactsPanel({
     status: state.status,
     facts: state.facts,
@@ -308,6 +324,7 @@ export function buildAssetDetailRouteModel(args: {
   nowMs: number;
   heldSell?: HeldSellDoor;
   acquireGateInputs?: JurisdictionGateInputs | null;
+  curatedBook?: CuratedBook;
 }): AssetDetailRouteModel {
   const mint = normalizeAssetMintParam(args.rawMint);
   return {
@@ -322,6 +339,7 @@ export function buildAssetDetailRouteModel(args: {
             nowMs: args.nowMs,
             ...(args.heldSell ? { heldSell: args.heldSell } : {}),
             acquireGateInputs: args.acquireGateInputs ?? null,
+            ...(args.curatedBook ? { curatedBook: args.curatedBook } : {}),
           }),
   };
 }

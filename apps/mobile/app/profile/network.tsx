@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { goBackOr } from '@/src/features/navigation/goBackOr';
 import { BACK_FALLBACK } from '@/src/features/navigation/guardedBack';
@@ -11,7 +11,8 @@ import {
   resolveNetworkPresentation,
   visibleSettingsCopyValues,
 } from '@/src/features/profile/settingsRoutePresentation';
-import { resolveCluster } from '@/src/lib/apiConfig';
+import { useConnectivity } from '@/src/features/connectivity/useConnectivity';
+import { resolveNetworkStatus, type NetworkStatus } from '@/src/lib/apiConfig';
 import { ClusterChip } from '@/src/ui/controls/ClusterChip';
 import { resolveClusterChipPresentation } from '@/src/ui/controls/clusterChipPresentation';
 import { BottomSheet } from '@/src/ui/primitives/BottomSheet';
@@ -36,25 +37,45 @@ assertNoUnreachableSettingsHref([]);
 
 export default function NetworkScreen() {
   const scrollFade = useScrollLinkedFadeTop();
-  const [cluster, setCluster] = useState<'devnet' | 'mainnet-beta' | null>(
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(
     null,
   );
   const [sheetVisible, setSheetVisible] = useState(false);
+  const mounted = useRef(true);
+  const reading = useRef(false);
   const presentation = resolveNetworkPresentation({
-    cluster,
+    cluster: networkStatus?.state === 'known' ? networkStatus.cluster : null,
     sheetVisible,
+    networkUnknown: networkStatus?.state === 'unknown',
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const next = await resolveCluster();
-      if (!cancelled) setCluster(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const readNetwork = useCallback(async () => {
+    if (reading.current) return;
+    reading.current = true;
+    try {
+      const next = await resolveNetworkStatus();
+      if (mounted.current) setNetworkStatus(next);
+    } catch {
+      // `resolveNetworkStatus` folds every failure into `unknown`; a throw here
+      // leaves the last answer on screen rather than inventing one.
+    } finally {
+      reading.current = false;
+    }
   }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    void readNetwork();
+    return () => {
+      mounted.current = false;
+    };
+  }, [readNetwork]);
+
+  const connectivity = useConnectivity();
+  const unknownNow = networkStatus?.state === 'unknown';
+  useEffect(() => {
+    if (connectivity === 'online' && unknownNow) void readNetwork();
+  }, [connectivity, unknownNow, readNetwork]);
 
   function closeSheet() {
     setSheetVisible(false);
@@ -101,6 +122,22 @@ export default function NetworkScreen() {
                   />
                 </SettingsCard>
               )
+            ) : presentation.networkUnknown ? (
+              <SettingsCard contentStyle={styles.cardContent}>
+                <SettingsRow
+                  accessory="value"
+                  family="desk"
+                  value={presentation.networkRetryLabel}
+                  glyph="discover"
+                  label={presentation.networkUnknownLabel}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void readNetwork();
+                  }}
+                  last
+                  testID="profile-network-unknown"
+                />
+              </SettingsCard>
             ) : null}
           </ScrollView>
           <ScrollEdgeFade

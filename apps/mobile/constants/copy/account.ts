@@ -4,6 +4,11 @@ export const accountCopy = {
   sectionSecurity: 'Security',
   sectionAutomation: 'Automation',
 
+  sectionWaitAlerts: 'Wait alerts',
+  waitAlertsEmptyTitle: 'No alerts yet',
+  waitAlertsEmptyBody: 'Tap Wait on any Review to set one.',
+  feeSub: 'Shown on every Review before you sign.',
+
   nameSave: 'Save',
 
   copyAddress: 'Copy address',

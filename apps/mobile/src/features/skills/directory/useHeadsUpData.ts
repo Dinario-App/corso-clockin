@@ -9,6 +9,7 @@ import {
   type OwnedHeadsUpWatch,
   type HeadsUpInboxEvent,
 } from "./headsUpAccessClient";
+import { resolveHeadsUpSymbols, type HeadsUpSymbols } from "./headsUpTokenNames";
 type Data = { watches: OwnedHeadsUpWatch[]; events: HeadsUpInboxEvent[] };
 type State = Data & {
   owner: CorsoSession | null;
@@ -23,6 +24,11 @@ export function useHeadsUpData(kind: "watches" | "inbox") {
   const proof = useRef({ signMessage, signInboxReadMessage, assertCurrent });
   proof.current = { signMessage, signInboxReadMessage, assertCurrent }; // Provider callback changes do not restart focused reads.
   const pending = useRef<AbortController | null>(null);
+  const naming = useRef<AbortController | null>(null);
+  const [symbols, setSymbols] = useState<{ owner: CorsoSession | null; map: HeadsUpSymbols }>({
+    owner: null,
+    map: {},
+  });
   const [state, setState] = useState<State>({
     ...empty,
     owner: null,
@@ -58,8 +64,20 @@ export function useHeadsUpData(kind: "watches" | "inbox") {
           ? { watches: await listHeadsUpWatches(args), events: [] }
           : { watches: [], events: await readHeadsUpInbox(args) };
       assertCurrent();
-      if (!controller.signal.aborted)
+      if (!controller.signal.aborted) {
         setState({ ...data, owner: session, status: "ready", removing: null, loadFailed: false });
+        naming.current?.abort();
+        const names = new AbortController();
+        naming.current = names;
+        const mints = [...data.watches, ...data.events].map((row) => row.mint);
+        void resolveHeadsUpSymbols(mints, names.signal).then((map) => {
+          if (!names.signal.aborted && Object.keys(map).length > 0)
+            setSymbols((previous) => ({
+              owner: session,
+              map: { ...(previous.owner === session ? previous.map : {}), ...map },
+            }));
+        });
+      }
     } catch {
       if (!controller.signal.aborted)
         setState((previous) => ({
@@ -76,6 +94,7 @@ export function useHeadsUpData(kind: "watches" | "inbox") {
       void refresh();
       return () => {
         pending.current?.abort();
+        naming.current?.abort();
       };
     }, [refresh]),
   );
@@ -128,6 +147,7 @@ export function useHeadsUpData(kind: "watches" | "inbox") {
     ...(current
       ? state
       : { ...empty, status: "error" as const, removing: null, loadFailed: false }),
+    symbols: current && symbols.owner === session ? symbols.map : {},
     refresh,
     remove,
     stepUpSheet: signer.stepUpSheet,

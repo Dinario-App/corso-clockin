@@ -16,6 +16,7 @@ import {
 } from '@/src/ui/quiet/quietMarkPresentation';
 import { ethena } from '@/constants/theme.ethena';
 import { useEthenaMaterial } from '@/src/ui/ethena/useEthenaMaterial';
+import { readWealthV1BuildFlag } from '@/src/features/wealth/wealthEnv';
 
 export default function FirstRunFundScreen() {
   const tray = useEthenaMaterial('ground');
@@ -39,10 +40,11 @@ export default function FirstRunFundScreen() {
     if (fund) moonPay.open('USDC');
   };
 
+  const wealthV1 = readWealthV1BuildFlag();
   return (
     <FirstRunFrame
-      title={copy.firstRun.fundTitle}
-      subtitle={copy.firstRun.fundSub}
+      title={wealthV1 ? copy.wealthV1.firstRun.fundTitle : copy.firstRun.fundTitle}
+      subtitle={wealthV1 ? copy.wealthV1.firstRun.fundSub : copy.firstRun.fundSub}
       titleTop={93}
       footer={
         <>

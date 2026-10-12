@@ -221,6 +221,9 @@ export function parseAndNormalizePriceSnapshot(
         ? quote.maxAgeMs
         : body.defaultMaxAgeMs,
     });
+    if (normalized.quote && isFiniteNumber(line.changePct24h)) {
+      normalized.quote.changePct24h = line.changePct24h;
+    }
     lines.push(normalized);
   }
 

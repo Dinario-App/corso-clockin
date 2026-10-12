@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { copy } from '@/constants/copy';
 import { CorsoText } from '@/src/theme/CorsoText';
+import { AMOUNT_MIN_FONT_SCALE } from '@/src/ui/format/amountFit';
+
 
 export function CompactAmountText({
   compactText,
@@ -16,6 +18,7 @@ export function CompactAmountText({
   accessibilityLabel,
   onLayout,
   numberOfLines = 1,
+  fitOneLine = false,
 }: {
   compactText: string;
   fullText: string;
@@ -23,7 +26,15 @@ export function CompactAmountText({
   accessibilityLabel?: string;
   onLayout?: (event: LayoutChangeEvent) => void;
   numberOfLines?: TextProps['numberOfLines'];
+  fitOneLine?: boolean;
 }) {
+  const fit = fitOneLine
+    ? {
+        numberOfLines: 1,
+        adjustsFontSizeToFit: true,
+        minimumFontScale: AMOUNT_MIN_FONT_SCALE,
+      }
+    : { numberOfLines };
   const [showFull, setShowFull] = useState(false);
   const canExpand = compactText !== fullText;
 
@@ -37,7 +48,7 @@ export function CompactAmountText({
         style={style}
         accessibilityLabel={accessibilityLabel}
         onLayout={onLayout}
-        numberOfLines={numberOfLines}
+        {...fit}
       >
         {compactText}
       </CorsoText>
@@ -51,7 +62,7 @@ export function CompactAmountText({
       accessibilityLabel={accessibilityLabel ?? fullText}
       accessibilityHint={showFull ? copy.numberCraft.showCompact : copy.numberCraft.showFull}
     >
-      <CorsoText style={style} onLayout={onLayout} numberOfLines={numberOfLines}>
+      <CorsoText style={style} onLayout={onLayout} {...fit}>
         {showFull ? fullText : compactText}
       </CorsoText>
     </Pressable>

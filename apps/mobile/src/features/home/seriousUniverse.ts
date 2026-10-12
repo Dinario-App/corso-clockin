@@ -1,5 +1,5 @@
 import type { HoldingLine } from '@/src/features/balances/computeFiatTotal';
-import { getMajorAsset } from '@/src/features/balances/majors';
+import type { BuyPickerRow } from '@/src/features/home/buy/buyPickerPresentation';
 import { MAX_MAJOR_ROWS } from '@/src/features/home/book/homeBookPresenter';
 import type { BookName, HomeBookModel } from '@/src/ui/ethena/homeBookModel';
 
@@ -40,13 +40,24 @@ export function parseSeriousUniverse(body: unknown): SeriousName[] {
   return parsed;
 }
 
+/**
+ * One majors-table row as the Buy picker draws it (`presentBuyPicker`): the
+ * table's display name and symbol, and the Today card's price and 24h.
+ */
+export type MajorsTableRow = Pick<
+  BuyPickerRow,
+  'mint' | 'name' | 'symbol' | 'price' | 'change'
+>;
+
 export function withSeriousMajorNames(
   model: HomeBookModel,
   names: readonly SeriousName[],
-  holdings: readonly Pick<HoldingLine, 'mint' | 'symbol' | 'atomic'>[] = [],
+  holdings: readonly Pick<HoldingLine, 'mint' | 'symbol' | 'atomic'>[] | undefined,
+  table: readonly MajorsTableRow[],
 ): HomeBookModel {
   if (model.sections == null || names.length === 0) return model;
-  const heldLines = holdings.filter((line) => {
+  const served = new Set(names.map((name) => name.mint));
+  const heldLines = (holdings ?? []).filter((line) => {
     try {
       return BigInt(line.atomic) > 0n;
     } catch {
@@ -64,10 +75,11 @@ export function withSeriousMajorNames(
       ...section.rows.map((row) => row.symbol),
       ...heldLines.map((line) => line.symbol),
     ]);
-    const extra = names
-      .filter((name) => {
-        if (held.has(name.mint) || symbols.has(name.symbol)) return false;
-        symbols.add(name.symbol);
+    const extra = table
+      .filter((row) => {
+        if (!served.has(row.mint)) return false;
+        if (held.has(row.mint) || symbols.has(row.symbol)) return false;
+        symbols.add(row.symbol);
         return true;
       })
       .slice(0, Math.max(0, MAX_SERIOUS_NAMES - section.rows.length))
@@ -80,19 +92,13 @@ export function withSeriousMajorNames(
   return { ...model, sections };
 }
 
-export const A17_RENAMED_MINT = '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs';
-
-/**
- * Applied AFTER dedupe and the cap, so the rename never changes which names
- * survive: the symbol dedupe still sees the payload's own symbols, as on main.
- */
-function bookName(name: SeriousName): BookName {
-  const renamed =
-    name.mint === A17_RENAMED_MINT ? getMajorAsset(name.mint) : undefined;
+function bookName(row: MajorsTableRow): BookName {
   return {
-    key: name.mint,
-    mint: name.mint,
-    name: renamed?.displayName ?? name.name,
-    symbol: renamed?.symbol ?? name.symbol,
+    key: row.mint,
+    mint: row.mint,
+    name: row.name,
+    symbol: row.symbol,
+    price: row.price,
+    change: row.change,
   };
 }

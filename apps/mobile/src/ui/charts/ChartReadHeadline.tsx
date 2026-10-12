@@ -23,12 +23,14 @@ import { CorsoText } from '@/src/theme/CorsoText';
 import { StructureRow, type StructureRowFace } from './StructureRow';
 import {
   STRUCTURE_ROW_TIMEFRAME,
+  resolveAssetStructureRow,
   resolveStructureRowPresentation,
 } from './structureRowPresentation';
 
 type RowProps = {
   mint: string | null;
   face?: StructureRowFace;
+  hideUnknown?: boolean;
   testID?: string;
 };
 
@@ -63,7 +65,7 @@ function InHandChartRead({ mint, testID }: RowProps) {
   );
 }
 
-function LiveChartRead({ mint, face, testID }: RowProps) {
+function LiveChartRead({ mint, face, hideUnknown, testID }: RowProps) {
   const armed = useLaneGate('fullChart');
   const displayNowMs = useDisplayClock({ enabled: armed });
   const live = armed && mint != null;
@@ -89,19 +91,18 @@ function LiveChartRead({ mint, face, testID }: RowProps) {
     errorCode: bundle.errorCode,
     lastFetchedAtMs: bundle.lastFetchedAtMs,
   });
-  const presentation = useMemo(
-    () =>
-      resolveStructureRowPresentation({
-        enabled: armed,
-        signal: signal.presentation,
-        chart: bundle,
-        nowMs: resolveDisplayedSignalNowMs({
-          wallNowMs: displayNowMs,
-          lastFetchedAtMs: bundle.lastFetchedAtMs,
-        }),
+  const presentation = useMemo(() => {
+    const read = resolveStructureRowPresentation({
+      enabled: armed,
+      signal: signal.presentation,
+      chart: bundle,
+      nowMs: resolveDisplayedSignalNowMs({
+        wallNowMs: displayNowMs,
+        lastFetchedAtMs: bundle.lastFetchedAtMs,
       }),
-    [armed, signal.presentation, bundle, displayNowMs],
-  );
+    });
+    return hideUnknown ? resolveAssetStructureRow(read) : read;
+  }, [armed, signal.presentation, bundle, displayNowMs, hideUnknown]);
   return (
     <StructureRow
       enabled={armed}
@@ -150,7 +151,12 @@ export function ChartReadHeadline(
     return <InHandChartRead mint={props.mint} testID={props.testID} />;
   }
   return (
-    <LiveChartRead mint={props.mint} face={props.face} testID={props.testID} />
+    <LiveChartRead
+      mint={props.mint}
+      face={props.face}
+      hideUnknown={props.hideUnknown}
+      testID={props.testID}
+    />
   );
 }
 

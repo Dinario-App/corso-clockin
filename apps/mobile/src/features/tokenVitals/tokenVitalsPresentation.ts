@@ -192,7 +192,9 @@ export function formatCount(value: number | null | undefined): string | null {
 
 export function formatRatio(value: number | null | undefined): string | null {
   if (value == null || !Number.isFinite(value) || value < 0) return null;
-  return `${(Math.round(value * 10) / 10).toFixed(1)}×`;
+  const rounded = (Math.round(value * 10) / 10).toFixed(1);
+  if (rounded === '0.0' && value > 0) return copy.vitals.buySellRatio('<0.1');
+  return copy.vitals.buySellRatio(rounded);
 }
 
 export function priceTone(changePct: number | null): string {
@@ -255,7 +257,11 @@ export function resolvePriceRow(
     frameLabel: payload.timeframe,
     ageText: formatAge(payload.token.ageMinutes),
     capText:
-      mc && fdv ? copy.vitals.marketCapFdv(mc, fdv) : mc ? `MC ${mc}` : null,
+      mc && fdv
+        ? copy.vitals.marketCapFdv(mc, fdv)
+        : mc
+          ? copy.vitals.marketCap(mc)
+          : null,
   };
 }
 

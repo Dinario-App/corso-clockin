@@ -10,6 +10,7 @@ import {
   type PaperRequest,
   type PaperRuleKind,
 } from './paperClient';
+import { exactPercentToBps } from '@/src/lib/exactPercent';
 
 export type PaperForm = {
   mint: string;
@@ -46,7 +47,7 @@ export function defaultPaperForm(mint?: string | null): PaperForm {
     startingUsd: '500',
     perDayMaxFires: '3',
     perDayMaxUsd: '150',
-    minOutBps: '100',
+    minOutBps: '1',
   };
 }
 
@@ -99,14 +100,16 @@ export function buildPaperRequest(
   const startingUsd = usdField('startingUsd');
   const perDayMaxUsd = usdField('perDayMaxUsd');
 
-  const intField = (key: 'perDayMaxFires' | 'minOutBps', max: number) => {
-    const value = form[key].trim();
-    const parsed = INT.test(value) ? Number(value) : NaN;
-    if (!(parsed >= 1 && parsed <= max)) fields.push(key);
-    return parsed;
-  };
-  const perDayMaxFires = intField('perDayMaxFires', PAPER_MAX_PER_DAY_FIRES);
-  const minOutBps = intField('minOutBps', PAPER_MAX_MIN_OUT_BPS);
+  const perDayMaxFiresText = form.perDayMaxFires.trim();
+  const perDayMaxFires = INT.test(perDayMaxFiresText)
+    ? Number(perDayMaxFiresText)
+    : NaN;
+  if (!(perDayMaxFires >= 1 && perDayMaxFires <= PAPER_MAX_PER_DAY_FIRES))
+    fields.push('perDayMaxFires');
+  /** A percent with at most two places, so it lands on a whole bp. */
+  const minOutBps = exactPercentToBps(form.minOutBps) ?? NaN;
+  if (!(minOutBps >= 1 && minOutBps <= PAPER_MAX_MIN_OUT_BPS))
+    fields.push('minOutBps');
 
   if (fields.length > 0 || !rule) return { ok: false, fields };
   const request: PaperRequest = {

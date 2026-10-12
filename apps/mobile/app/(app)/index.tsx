@@ -8,6 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePrivy } from '@privy-io/expo';
 import { useFiatTotal } from '@/src/features/balances/useFiatTotal';
 import {
+  useOnReconnect,
+  useReadFailState,
+} from '@/src/features/connectivity/useConnectivity';
+import {
   BOOK_ASK_HREF,
   BOOK_SETTINGS_HREF,
   BOOK_SLEEVE_HREF,
@@ -32,10 +36,13 @@ import {
   buyPickerRowHref,
   presentBuyPicker,
 } from '@/src/features/home/buy/buyPickerPresentation';
+import { useAcquireGateInputs } from '@/src/features/security/useAcquireGateInputs';
 import { presentTodayCard } from '@/src/features/home/today/todayCardPresentation';
 import { useTodayCard } from '@/src/features/home/today/useTodayCard';
 import { SwapTokenPickerSheet } from '@/src/features/tokenFacts/SwapTokenPickerSheet';
+import { useCuratedBook } from '@/src/features/universe/useCuratedBook';
 import { BookScreen } from '@/src/features/home/book/BookScreen';
+import { LiveDeskCard } from '@/src/features/liveDesk/LiveDeskCard';
 import {
   parseSeriousUniverse,
   withSeriousMajorNames,
@@ -46,6 +53,11 @@ import { useCorsoSession } from '@/src/features/session/SessionContext';
 import { useAccessibilityPreference } from '@/src/motion/useAccessibilityPreference';
 import { usePullRefresh } from '@/src/ui/primitives/usePullRefresh';
 import { readLaunchDockBuildFlag } from '@/src/features/navigation/launchDockEnv';
+import { presentWealthHome } from '@/src/features/home/book/wealthHomePresenter';
+import {
+  readWealthHomeOptions,
+  readWealthV1BuildFlag,
+} from '@/src/features/wealth/wealthEnv';
 import {
   LAUNCH_AVATAR_HREF,
   resolveTabBarPresentation,
@@ -61,7 +73,9 @@ export default function BookHomeScreen() {
   const [storedName, setStoredName] = useState<string | null>(null);
   const today = useTodayCard();
   const [buyOpen, setBuyOpen] = useState(false);
+  const acquireGateInputs = useAcquireGateInputs();
   const [searchOpen, setSearchOpen] = useState(false);
+  const curated = useCuratedBook(searchOpen);
   const [seriousNames, setSeriousNames] = useState<SeriousName[]>([]);
 
   useEffect(() => {
@@ -109,8 +123,17 @@ export default function BookHomeScreen() {
 
   const nowMs = Date.now();
   const hideBalances = useHideBalances();
-  const heldBook = presentHomeBook(fiat, nowMs);
+  const failState = useReadFailState();
+  useOnReconnect(() => {
+    refreshToday();
+    void refresh();
+  });
+  const wealthV1 = readWealthV1BuildFlag();
+  const heldBook = wealthV1
+    ? presentWealthHome({ ...fiat, failState }, nowMs, readWealthHomeOptions())
+    : presentHomeBook({ ...fiat, failState }, nowMs);
   const namesEligible =
+    !wealthV1 &&
     !locked &&
     session?.type === 'privy_embedded' &&
     heldBook.sections != null;
@@ -132,18 +155,22 @@ export default function BookHomeScreen() {
     };
   }, [namesEligible]);
 
-  const shownBook = withSeriousMajorNames(
-    heldBook,
-    namesEligible ? seriousNames : [],
-    fiat.holdings?.lines,
-  );
-  const model = hideBalances ? maskHomeBook(shownBook) : shownBook;
   const todayModel = presentTodayCard({
     prices: today.prices,
     changes: today.changes,
     mood: today.mood,
     nowMs,
+    failState,
   });
+  const shownBook = wealthV1
+    ? heldBook
+    : withSeriousMajorNames(
+        heldBook,
+        namesEligible ? seriousNames : [],
+        fiat.holdings?.lines,
+        presentBuyPicker(todayModel).rows,
+      );
+  const model = hideBalances ? maskHomeBook(shownBook) : shownBook;
   const bookName = resolveBookName(storedName);
   const dock = resolveTabBarPresentation({
     hidden: false,
@@ -161,6 +188,7 @@ export default function BookHomeScreen() {
         topInset={insets.top}
         dockReserve={dock.reserve}
         onAddCash={() => openBookAddCash(router)}
+        liveDesk={<LiveDeskCard plane="ground" testID="home-live-desk" />}
         hideBuy={session?.type === 'connected_external'}
         onBuy={() => { if (session?.type !== 'connected_external') setBuyOpen(true); }}
         onAsk={() => router.push(BOOK_ASK_HREF)}
@@ -184,7 +212,7 @@ export default function BookHomeScreen() {
       />
       <BuyPickerSheet
         visible={buyOpen}
-        model={presentBuyPicker(todayModel)}
+        model={presentBuyPicker(todayModel, acquireGateInputs)}
         onSelectMajor={(mint) => {
           setBuyOpen(false);
           router.push(buyPickerRowHref(mint));
@@ -199,7 +227,8 @@ export default function BookHomeScreen() {
         visible={searchOpen}
         tokens={[]}
         selectedMint=""
-        allowSearch
+        bookState={curated.state}
+        book={curated.book}
         acquireRows
         onSelect={(token) => {
           setSearchOpen(false);

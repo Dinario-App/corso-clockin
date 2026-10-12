@@ -3,9 +3,11 @@ import { Image, Text, View, type TextStyle } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import {
   resolveTokenIcon,
+  TOKEN_ICON_BUNDLED,
   TOKEN_ICON_IMAGE,
   TOKEN_ICON_SVG,
 } from '@/src/features/tokens/tokenIconResolve';
+import { bundledTokenIconSource } from '@/src/ui/primitives/bundledTokenIcons';
 import { resolveTokenMarkPresentation } from '@/src/ui/primitives/tokenMarkPresentation';
 
 const failedUris = new Set<string>();
@@ -31,6 +33,11 @@ export function TokenIconImage({
     failedUris.add(uri);
     setFailed(true);
   };
+  if (format === TOKEN_ICON_BUNDLED) {
+    const source = bundledTokenIconSource(uri);
+    if (source === null) return <Text style={textStyle}>{label}</Text>;
+    return <Image source={source} style={{ width: size, height: size }} />;
+  }
   if (format === TOKEN_ICON_SVG) {
     return <SvgUri uri={uri} width={size} height={size} onError={onError} />;
   }

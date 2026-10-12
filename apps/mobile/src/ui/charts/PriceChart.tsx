@@ -82,6 +82,7 @@ import {
 import { overlayLiveTick } from '@/src/features/prices/priceStream';
 import { openPriceStream } from '@/src/features/prices/priceStreamTransport';
 import { usePriceStream } from '@/src/features/prices/usePriceStream';
+import { useReadFailState } from '@/src/features/connectivity/useConnectivity';
 import { MIN_TAP_TARGET_PT } from '@/src/ui/primitives/tapTargetPresentation';
 import {
   TOKEN_DETAIL_CHART_CARD,
@@ -383,6 +384,7 @@ export function PriceChart({
     () => resolvePriceChartSeriesKey(fetched),
     [fetched.status, fetched.series],
   );
+  const failState = useReadFailState();
   const historyDisplay = resolvePriceChartHistoryDisplay({
     mint,
     range,
@@ -396,6 +398,7 @@ export function PriceChart({
     height,
     scrubIndex: historyDisplay.held ? null : scrubIndex,
     condensed: face.condensed,
+    failState,
   });
   const readyKey =
     history.status === 'ready' && resolvedPresentation.kind === 'chart' && mint

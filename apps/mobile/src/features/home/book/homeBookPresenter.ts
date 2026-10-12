@@ -1,19 +1,27 @@
 import { copy } from '@/constants/copy';
 import { classifyHolding, getMajorAsset } from '@/src/features/balances/majors';
+import { majorConsumerName } from '@/src/features/balances/majorNames';
 import { readLaunchDockBuildFlag } from '@/src/features/navigation/launchDockEnv';
 import type {
   FiatLineResult,
   FiatTotalStatus,
   HoldingLine,
   HoldingsSnapshot,
+  PriceQuoteMap,
 } from '@/src/features/balances/computeFiatTotal';
+import { computeChangeToday, type ChangeToday } from './homeChangeToday';
 import { walletTotalCaveat } from '@/src/features/balances/walletHoldings';
+import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
 import {
   formatCompactTokenAmount,
   groupDecimalDigits,
 } from '@/src/ui/format/numberCraft';
 import type {
   BookHero,
+  BookHeroDelta,
   BookMark,
   BookRow,
   BookSection,
@@ -23,7 +31,6 @@ import type {
 
 export const MAX_MAJOR_ROWS = 5;
 
-/** The slice of `FiatTotalState` the Book reads. Nothing else. */
 export type HomeBookRead = {
   status: FiatTotalStatus;
   result: { lines: readonly FiatLineResult[] };
@@ -31,12 +38,15 @@ export type HomeBookRead = {
   /** A known-good total held across a later failed read. */
   stale: boolean;
   staleAsOfMs: number | null;
+  failState?: ReadFailState;
+  quotes?: PriceQuoteMap;
 };
 
-type Line = {
+export type Line = {
   line: HoldingLine;
   /** Cents, or `null` when this line has no price. */
   cents: bigint | null;
+  stable?: boolean;
 };
 
 const MAJOR_MARKS: Readonly<Record<string, { glyph: string; mark: BookMark }>> =
@@ -68,7 +78,7 @@ function presentBook(read: HomeBookRead, nowMs: number): HomeBookModel {
   const heldSnapshot = read.holdings?.quantityStatus === 'ready';
 
   if (read.stale && heldSnapshot) {
-    return bookFrom(read, 'stale', staleNote(read.staleAsOfMs, nowMs));
+    return bookFrom(read, 'stale', ageNote(read.staleAsOfMs, nowMs), nowMs);
   }
   if (read.status === 'loading' || (read.stale && !heldSnapshot)) {
     return loading();
@@ -76,21 +86,24 @@ function presentBook(read: HomeBookRead, nowMs: number): HomeBookModel {
   if (read.status === 'unavailable' && !heldSnapshot) {
     return {
       state: 'unavailable',
-      hero: { kind: 'unavailable', message: t.unavailable },
+      hero: {
+        kind: 'unavailable',
+        message: readFailLine(read.failState, t.unavailable),
+      },
       newBookLine: null,
       sections: null,
     };
   }
   if (read.status === 'zero') {
-    return { ...bookFrom(read, 'new', null), newBookLine: t.newBook };
+    return { ...bookFrom(read, 'new', null, nowMs), newBookLine: t.newBook };
   }
   if (read.status === 'partially_priced' || read.status === 'unavailable') {
     // `unavailable` over a COMPLETE quantity read means nothing could be
     // priced — the balance was read, the prices were not. That is a partial
     // book with no priced part, not a refused read.
-    return bookFrom(read, 'partial', null);
+    return bookFrom(read, 'partial', null, nowMs);
   }
-  return bookFrom(read, 'book', null);
+  return bookFrom(read, 'book', null, nowMs);
 }
 
 function loading(): HomeBookModel {
@@ -112,24 +125,11 @@ function loading(): HomeBookModel {
 function bookFrom(
   read: HomeBookRead,
   requested: Exclude<HomeBookState, 'loading' | 'unavailable' | 'cashOnly'>,
-  note: string | null,
+  staleNoteText: string | null,
+  nowMs: number,
 ): HomeBookModel {
   const t = copy.homeBook;
-  const holdings = read.holdings as HoldingsSnapshot;
-  const priced = new Map(read.result.lines.map((l) => [l.mint, l]));
-
-  const cash: Line[] = [];
-  const majors: Line[] = [];
-  const sleeve: Line[] = [];
-  for (const line of holdings.lines) {
-    if (!isHeld(line)) continue;
-    const section = classifyHolding(line, holdings.cluster);
-    if (section === 'hidden') continue;
-    const entry = { line, cents: centsOf(priced.get(line.mint)) };
-    if (section === 'cash') cash.push(entry);
-    else if (section === 'major') majors.push(entry);
-    else sleeve.push(entry);
-  }
+  const { cash, majors, sleeve } = splitBookLines(read);
 
   const all = [...cash, ...majors, ...sleeve];
   const anyUnpriced = all.some((entry) => entry.cents === null);
@@ -171,6 +171,27 @@ function bookFrom(
   ];
 
   const pricedAny = all.some((entry) => entry.cents !== null);
+  const stale = requested === 'stale';
+  const note = stale
+    ? staleNoteText
+    : ageNote(oldestAsOfMs(read, all), nowMs);
+  const noteTone = stale ? 'stale' : 'quiet';
+  const delta =
+    stale
+      ? changeDelta({ kind: 'unavailable' })
+      : requested === 'new'
+        ? null
+        : changeDelta(
+            computeChangeToday(
+              all.map((entry) => ({
+                mint: entry.line.mint,
+                cents: entry.cents,
+                stable: entry.stable === true,
+              })),
+              read.quotes,
+              nowMs,
+            ),
+          );
   const hero: BookHero =
     partial && !pricedAny
       ? {
@@ -179,17 +200,46 @@ function bookFrom(
           amount: t.notPriced,
           cents: null,
           note,
-          delta: null,
+          noteTone,
+          delta,
         }
       : {
           kind: 'value',
           eyebrow: partial ? t.eyebrowPartial : t.eyebrow,
           ...splitDollars(total),
           note,
-          delta: null,
+          noteTone,
+          delta,
         };
 
   return { state, hero, newBookLine: null, sections };
+}
+
+export function splitBookLines(read: HomeBookRead): {
+  cash: Line[];
+  majors: Line[];
+  sleeve: Line[];
+} {
+  const holdings = read.holdings as HoldingsSnapshot;
+  const priced = new Map(read.result.lines.map((l) => [l.mint, l]));
+
+  const cash: Line[] = [];
+  const majors: Line[] = [];
+  const sleeve: Line[] = [];
+  for (const line of holdings.lines) {
+    if (!isHeld(line)) continue;
+    const section = classifyHolding(line, holdings.cluster);
+    if (section === 'hidden') continue;
+    const entry = {
+      line,
+      cents: centsOf(priced.get(line.mint)),
+      stable: section === 'cash',
+    };
+    if (section === 'cash') cash.push(entry);
+    else if (section === 'major') majors.push(entry);
+    else sleeve.push(entry);
+  }
+  return { cash, majors, sleeve };
 }
 
 /** A line with nothing in it is not a holding (walletHoldings keeps SOL at 0). */
@@ -208,7 +258,7 @@ function centsOf(result: FiatLineResult | undefined): bigint | null {
   return BigInt(match[1]) * 100n + BigInt(match[2]);
 }
 
-function sum(lines: readonly Line[]): bigint {
+export function sum(lines: readonly Line[]): bigint {
   return lines.reduce((acc, entry) => acc + (entry.cents ?? 0n), 0n);
 }
 
@@ -233,7 +283,12 @@ function splitDollars(cents: bigint): { amount: string; cents: string } {
 }
 
 /** `$3,120 · 25%`; whole dollars, floored, so a subtotal never overstates. */
-function subtotal(lines: readonly Line[], shareOf: bigint | null): string {
+export function subtotal(
+  lines: readonly Line[],
+  shareOf: bigint | null,
+): string {
+  // ⛔ Held but not one line priced: that is not `$0`, it is unknown. (An
+  // EMPTY section of a complete read is a known `$0`.)
   if (lines.length > 0 && lines.every((entry) => entry.cents === null))
     return copy.homeBook.notPriced;
   const part = sum(lines);
@@ -264,8 +319,8 @@ function cashRow(lines: readonly Line[]): BookRow {
     mark: symbols.length === 1 && symbols[0] === 'USDC' ? 'usdc' : 'none',
     symbol: symbols.length === 1 ? symbols[0] : null,
     mint: lines.length === 1 ? lines[0].line.mint : null,
-    name: symbols.join(' · '),
-    sub: lines.length === 1 ? quantity(lines[0].line) : null,
+    name: copy.homeBook.cash,
+    sub: null,
     value: unpriced ? null : formatCents(sum(lines)),
     opens: null,
   };
@@ -285,7 +340,7 @@ function majorRow(entry: Line): BookRow {
     mark: look.mark,
     symbol,
     mint: entry.line.mint,
-    name: asset?.displayName ?? symbol,
+    name: asset ? majorConsumerName(asset) : symbol,
     sub: amount ? `${amount} ${symbol}` : symbol,
     value: entry.cents === null ? null : formatCents(entry.cents),
     opens: { kind: 'major', mint: entry.line.mint },
@@ -306,7 +361,33 @@ function sleeveRow(lines: readonly Line[]): BookRow {
   };
 }
 
-function staleNote(asOfMs: number | null, nowMs: number): string | null {
+function changeDelta(change: ChangeToday | null): BookHeroDelta | null {
+  if (change === null) return null;
+  const t = copy.homeBook;
+  if (change.kind === 'unavailable') {
+    return { direction: null, value: t.changeTodayUnavailable, suffix: '' };
+  }
+  return {
+    direction: change.direction,
+    value: `${formatCents(change.changeCents)} · ${change.pct}%`,
+    suffix: t.changeToday,
+  };
+}
+
+function oldestAsOfMs(read: HomeBookRead, lines: readonly Line[]): number | null {
+  let oldest: number | null = Number.isFinite(read.holdings?.asOfMs)
+    ? (read.holdings as HoldingsSnapshot).asOfMs
+    : null;
+  for (const entry of lines) {
+    if (entry.cents === null) continue;
+    const asOfMs = read.quotes?.[entry.line.mint]?.asOfMs;
+    if (typeof asOfMs !== 'number' || !Number.isFinite(asOfMs)) continue;
+    oldest = oldest === null ? asOfMs : Math.min(oldest, asOfMs);
+  }
+  return oldest;
+}
+
+function ageNote(asOfMs: number | null, nowMs: number): string | null {
   if (asOfMs === null) return null;
   const t = copy.homeBook;
   const minutes = Math.floor(Math.max(0, nowMs - asOfMs) / 60_000);

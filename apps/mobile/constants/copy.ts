@@ -10,11 +10,13 @@ import { importFailureCopy } from './copy/importFailure';
 import { moneyCopy } from './copy/money';
 import { paperCopy } from './copy/paper';
 import { deskUtilitiesCopy } from './copy/deskUtilities';
+import { experienceMapCopy } from './copy/experienceMap';
 import { todayCardProposedCopy } from './copy/todayCard';
 import { launchDockCopy } from './copy/launchDock';
 import { privacyPolicyCopy } from './copy/privacyPolicy';
 import { tradingCopy } from './copy/trading';
 import { welcomeCopy } from './copy/welcome';
+import { wealthV1Copy } from './copy/wealthV1';
 export { safetyCopy } from './copy/safety';
 
 export const copy = {
@@ -25,7 +27,7 @@ export const copy = {
     cancelled: 'Connection cancelled.',
     wallet_not_found: 'No compatible wallet is installed.',
     timeout: 'The wallet did not respond. Try again.',
-    wrong_cluster: 'Choose Solana mainnet in your wallet.',
+    wrong_cluster: 'Switch your wallet to the main Solana network.',
     failed: 'Could not connect. Try again.',
     connected: 'Connected',
     disconnect: 'Disconnect',
@@ -44,6 +46,8 @@ export const copy = {
     legalSuffix: '.',
     ...welcomeCopy,
   },
+  /** START-HERE 2026-08-19 — the only on-screen words for the five frames. */
+  /** Nav-hybrid roots (CANON-LOCK #1). Scaffold copy for the three non-Home roots. */
   quietMark: {
     line: 'A trading desk for everyday traders.',
     subLine: 'Read the market first. Then Wait or Buy.',
@@ -55,7 +59,7 @@ export const copy = {
     nameTitle: 'What should we call this?',
     nameHint: 'You can change this later.',
     nameA11y: 'Portfolio name',
-    namePreview: ['Cash', 'Majors', 'Everything else'] as const,
+    namePreview: ['Cash', 'Majors', 'Other holdings'] as const,
     continue: 'Continue',
     skip: 'Skip for now',
     howTitle: 'How it works',
@@ -196,8 +200,9 @@ export const copy = {
     searchOrPaste: 'Search or paste address',
     paste: 'Paste',
     searching: 'Searching…',
-    searchNothing: 'Nothing to show for that.',
     searchFailed: "Search didn't load.",
+    searchNoMatchTitle: 'No tokens match',
+    searchNoMatchBody: 'Check the spelling.',
     cancel: 'Cancel',
     continue: 'Continue',
     dismissSheet: (title: string) => `Dismiss ${title} sheet`,
@@ -265,7 +270,7 @@ export const copy = {
     threadsBought: (trade: string) => `Bought · ${trade}`,
     /** Wallet pill (Home top-right) — opens Money. */
     walletPillA11y: (balance: string) => `Balance, ${balance}. Open Money`,
-    quoteLive: 'Quote live',
+    quoteLive: 'Live price',
     needs: 'Needs review',
     signed: 'Done',
     stale: 'Stale',
@@ -303,10 +308,13 @@ export const copy = {
     verified: 'verified',
     age: (text: string) => `age ${text}`,
     ageUnknown: 'age unknown',
-    marketCapFdv: (mc: string, fdv: string) => `MC ${mc} / FDV ${fdv}`,
-    liquidity: 'Liquidity',
+    marketCapFdv: (mc: string, fdv: string) =>
+      `Market cap ${mc} · With future coins ${fdv}`,
+    marketCap: (mc: string) => `Market cap ${mc}`,
+    liquidity: 'Money in the pool',
     volume24h: 'Volume 24h',
-    buySell: 'Buy/Sell',
+    buySell: 'Buying vs selling',
+    buySellRatio: (ratio: string) => `${ratio} to 1 · 24h`,
     holders: 'Holders',
     top10: (pct: string) => `Top-10 hold ${pct}`,
     top1: (pct: string) => `Top-1 ${pct}`,
@@ -337,7 +345,7 @@ export const copy = {
       youPay: 'You pay',
       youReceive: 'You receive',
       estimate: (text: string) => `~${text} (est.)`,
-      priceImpact: 'Price impact',
+      priceImpact: 'Price shift from your trade',
       shownAtReview: 'shown at review',
       networkAndFee: 'Network + fee',
     },
@@ -345,7 +353,7 @@ export const copy = {
       `${symbol} vitals, safety ${verdict}`,
   },
   chartEdge: {
-    title: 'STRUCTURE',
+    title: 'TREND',
     timeframeNote: (timeframe: string) => `${timeframe} readings`,
     confluence: 'Confluence',
     band: {
@@ -363,19 +371,20 @@ export const copy = {
         : direction === 'bull'
           ? 'Trend turned up'
           : 'Trend turned down',
-    structureLegend: 'Structure',
+    /** The chart legend's name for the structure-mark family (A15a). */
+    structureLegend: 'Trend',
     structureAt: (price: string) => `at ${price}`,
-    noStructure: 'No structure mark in this window',
+    noStructure: 'No clear trend in this window',
     /** The nearest active zone to the last close. */
-    demandBlock: 'Demand block',
+    demandBlock: 'Buying zone',
     supplyBlock: 'Selling zone',
     fairValueGap: 'Fair-value gap',
     zoneRange: (bottom: string, top: string) => `${bottom} – ${top}`,
     noZone: 'No active zone in this window',
     /** Honest states — the pill is real, the reading is not there. */
-    off: 'Structure readings are off',
-    loading: 'Reading structure…',
-    unavailable: 'Structure readings not available right now',
+    off: 'Trend readings are off',
+    loading: 'Reading the trend…',
+    unavailable: "Trend readings aren't available right now",
     /** A close we will not score. A read of the last bar, not a forecast. */
     unknownStale: 'Last close is too old to read.',
     unknownUnreadable: 'No reading for this day.',
@@ -384,7 +393,7 @@ export const copy = {
     thin: (bars: number) =>
       bars === 1 ? 'Thin data: 1 bar' : `Thin data: ${bars} bars`,
     /** 15s is the fast price line; overlays begin at the first signal bar. */
-    lineOnly: '15s is a fast price line. Structure begins at 1m.',
+    lineOnly: '15s shows only a fast price line. The trend starts at 1m.',
     closedBars: 'closed bars',
     live: 'live',
     openTerminal: 'Open terminal',
@@ -392,6 +401,10 @@ export const copy = {
       `Open the candlestick terminal for ${symbol}`,
     /** The fullscreen mode change: the line is held while Vela paints. */
     openingTerminal: 'Opening the terminal…',
+  },
+  majorNames: {
+    cbBTC: { name: 'Bitcoin', wrapper: "cbBTC, Coinbase's Bitcoin token" },
+    ETH: { name: 'Ether', wrapper: "Wormhole's Ether token" },
   },
   majorDetail: {
     eyebrowPosition: 'Your position',
@@ -453,14 +466,15 @@ export const copy = {
     eyebrowPartial: 'Total value · partial',
     cash: 'Cash',
     majors: 'Majors',
-    sleeve: 'Everything else',
-    venue: 'on Solana',
+    sleeve: 'Other holdings',
     /** Reading: a placeholder, never `$0.00`. */
     placeholder: '…',
     /** Held, but no price could be read: unknown, never `$0`. */
     notPriced: 'Not priced',
     unavailable: "Couldn't read your balance.",
     newBook: 'Nothing held yet.',
+    zeroLine: 'Add cash to start. Read the market now.',
+    newBookBody: 'Cash comes first. Majors when you are ready.',
     emptyCash: 'No cash yet',
     emptyMajors: 'No majors yet',
     emptySleeve: 'Nothing else yet',
@@ -470,12 +484,14 @@ export const copy = {
     ageMinutes: (minutes: number) =>
       minutes === 1 ? '1 minute' : `${minutes} minutes`,
     ageHours: (hours: number) => (hours === 1 ? '1 hour' : `${hours} hours`),
+    changeToday: 'today',
+    changeTodayUnavailable: 'Change today unavailable',
   },
   sleeve: {
     /** Nav title. Home keeps the short label `homeBook.sleeve`. */
-    title: 'Everything else',
-    valueEyebrow: 'Everything else value',
-    valuePartial: 'Everything else value · partial',
+    title: 'Other holdings',
+    valueEyebrow: 'Other holdings value',
+    valuePartial: 'Other holdings value · partial',
     keepSmall: 'Keep them small.',
     findToken: 'Find a token',
     holdings: 'Holdings',
@@ -485,6 +501,9 @@ export const copy = {
     send: 'Send',
     close: 'Close',
     bookSplit: 'How is my money split?',
+    startHere: 'Start here',
+    solanaToday: 'Is Solana up or down today?',
+    whatDoesWait: 'What does Wait do?',
     /**
      * The Looked at line, joined with ` · ` from the sources the answer read.
      * The price slot is the quote's own clock.
@@ -495,7 +514,7 @@ export const copy = {
     holding: 'Holding',
     value: 'Value',
     shareOfBook: 'Share of total',
-    liquidity: 'Liquidity',
+    liquidity: 'Money in the pool',
     holders: 'Holders',
     verified: 'Verified',
     age: 'Age',
@@ -520,10 +539,10 @@ export const copy = {
       unreadable: 'Could not read it',
     } as const,
     contributor: {
-      market_structure: 'Structure',
-      order_block: 'Order block',
+      market_structure: 'Trend',
+      order_block: 'Price zone',
       fvg: 'Fair-value gap',
-      liquidity: 'Liquidity levels',
+      liquidity: 'Where the money sits',
       divergence: 'RSI',
       premium_discount: 'Range',
     } as const,
@@ -552,6 +571,11 @@ export const copy = {
   receipt: {
     chainUnavailable: 'Record unavailable. Trying again.',
     quotedAmount: (value: string) => `${value} · quoted`,
+    thenNowHeading: 'Price then and now',
+    priceThen: 'Then',
+    priceNow: 'Now',
+    priceThenUnavailable: 'Price then unavailable',
+    priceNowUnavailable: 'Price now unavailable',
   },
   tokenDetail: {
     chain: 'Solana',
@@ -571,6 +595,7 @@ export const copy = {
       'No swap for this token yet. The pair is unverified or too thin, so Corso is holding it back rather than guessing.',
     sellNeedsCorsoWallet:
       'Selling other tokens needs a Corso wallet. This wallet can still buy, send and receive.',
+    notOffered: "Corso doesn't offer this token. You can still sell it.",
     /**
      * The holdings read was made and did not come back. Never a zero and never
      * a silent missing door: "we could not read this" is a different claim from
@@ -663,7 +688,7 @@ export const copy = {
     retry: 'Retry',
   },
   v1Onboarding: {
-    bringWalletTitle: 'Bring your wallet',
+    bringWalletTitle: 'Enter your recovery phrase',
     bringWalletBody:
       "Your words stay on this phone. They're never sent anywhere.",
     bringWalletPlaceholder: 'Your 12 or 24 words',
@@ -722,7 +747,7 @@ export const copy = {
     safeReveal: {
       /** Footnote under the reveal row on the Security sheet. */
       annotation:
-        'Embedded-wallet accounts see Export wallet here instead of Reveal recovery phrase — the two doors are different.',
+        "If your wallet came with your sign-in, you'll see Export wallet here instead of Reveal recovery phrase. They're two different doors.",
       importDoor: {
         eyebrow: 'RECOVERY · IMPORTED WALLET',
         entryLabel: 'Reveal recovery phrase',
@@ -750,11 +775,11 @@ export const copy = {
           'If you lose the words and this device, no one can recover the wallet, including Corso.',
       },
       exportDoor: {
-        eyebrow: 'EMBEDDED WALLET · OUR SIGN-IN PROVIDER',
-        entryLabel: 'Export wallet',
-        title: 'Export wallet',
+        eyebrow: 'WALLET FROM YOUR SIGN-IN',
+        entryLabel: 'Export your key',
+        title: 'Export your key',
         intro:
-          'This account uses an embedded wallet secured with our sign-in provider. Exporting assembles the full key so you can move it into a self-custody wallet.',
+          'This wallet came with your sign-in and is secured by our sign-in provider. Exporting puts the full key together so you can move it to a wallet you control yourself.',
         stepLabel: 'What happens next',
         step: 'Our sign-in provider’s secure page assembles the full key.',
         warning: 'Once exported, anyone who has the key controls the funds.',
@@ -893,13 +918,13 @@ export const copy = {
       `${picked} could not answer, so ${answered} did.`,
     /** Attach menu rows — never wallet actions. */
     attachPaste: 'Paste address',
-    attachPasteCaption: 'A mint or a wallet from your clipboard',
+    attachPasteCaption: 'A token or wallet address from your clipboard',
     attachNothingToPaste: 'Nothing to paste.',
     timeout: 'That took too long. Try again?',
     rateLimited: 'Too many at once. Give it a second.',
     /** Corso could not read the balance. This is a fault and says so. */
     moneyUnavailable: "Can't see your money right now. Not your fault.",
-    chooseMint: (symbol: string) => `Choose the ${symbol} mint.`,
+    chooseMint: (symbol: string) => `Which ${symbol} do you mean?`,
     sellWhich: 'Which one do you want to sell?',
     sellWhichOne: (symbol: string) => `Sell your ${symbol}?`,
     /** More positions than the reply can draw doors for. Still never a pick. */
@@ -919,7 +944,7 @@ export const copy = {
     insufficientAmount: (requested: string, balance: string, symbol: string) =>
       `You asked to swap ${requested} ${symbol}. You have ${balance} ${symbol}.`,
     solReserve: (reserve: string) =>
-      `Leaves ${reserve} SOL for network fees and token account rent.`,
+      `Keeps ${reserve} SOL aside for network fees and one-time account costs.`,
   },
   moving: {
     label: 'Moving',
@@ -956,15 +981,19 @@ export const copy = {
       `Total balance ${amount}, plus ${count} assets without a price. Change unavailable.`,
     balanceFiatUnavailable: (amount: string) =>
       `Balance ${amount}. Fiat total unavailable.`,
-    assetSol: 'SOL',
+    /** Bounded asset labels (F3b — SOL + native USDC only). */
+    assetSol: 'Solana',
     assetUsdc: 'USDC',
     more: 'More',
     moreBuy: 'Buy',
     moreScan: 'Scan',
-    moreCluster: 'Cluster',
+    moreCluster: 'Network',
     moreScanStub: "Scan isn't available yet.",
-    moreClusterStub: 'Change cluster in Profile → Network.',
+    moreClusterStub: 'Change the network in Profile → Network.',
     ...homeCopy,
+  },
+  connectivity: {
+    offlineBanner: "You're offline",
   },
   profile: {
     title: 'Profile',
@@ -990,7 +1019,7 @@ export const copy = {
     securityMfaPasskeyUnavailable:
       'Passkey setup is not available in this build configuration.',
     securityMfaWrongWallet:
-      'Wallet signing checks are available for the embedded wallet only.',
+      'Signing checks work only for the wallet that came with your sign-in.',
     securityMfaAccountLimit:
       'This protects wallet signing, not sign-in. Someone who controls your email or Google account may still be able to reset your sign-in.',
     securityMfaRecovery:
@@ -1003,7 +1032,10 @@ export const copy = {
     notificationsLoadFailed: "Couldn't load notifications.",
     notificationsEmpty: "You're all caught up",
     networkTitle: 'Network',
-    selectCluster: 'Select cluster',
+    networkUnknown: 'Network unknown',
+    /** The tap on the unknown row re-reads `/v1/config`. Same word as `vitals.retry`. */
+    networkRetry: 'Retry',
+    selectCluster: 'Select network',
     preferencesTitle: 'Preferences',
     preferencesCurrency: 'Currency',
     preferencesHideBalances: 'Hide balances',
@@ -1167,7 +1199,7 @@ export const copy = {
     cancel: 'Cancel',
     done: 'Done',
     byokDisclosure: (vendor: string) =>
-      `Connect your own ${vendor} API key. Your use of ${vendor} is governed by your agreement with ${vendor}, not by Dinario. You are responsible for your own API usage and costs. Your key is stored only on this device and is never sent to Dinario's servers.`,
+      `Connect your own ${vendor} API key. Your use of ${vendor} is governed by your agreement with ${vendor}, not by Dinario. You are responsible for what you use on that key and what it costs. Your key is stored only on this device and is never sent to Dinario's servers.`,
     managedDisclosure:
       "Powered by Google's Gemini through Corso's account. Subject to Corso's Terms.",
     /** The API vendors, for the disclosure sentence above. */
@@ -1194,8 +1226,7 @@ export const copy = {
     title: 'Buy',
     checkoutDisclosure:
       "MoonPay handles payment and ID checks and shows its fees before you pay. Corso doesn't add a fee.",
-    sheetSubtitle: (lastFour: string) =>
-      lastFour ? `with MoonPay · to wallet ··${lastFour}` : 'with MoonPay',
+    sheetSubtitle: (_lastFour: string) => 'with MoonPay',
     opening: 'Opening MoonPay…',
     pendingTitle: 'Buy with MoonPay',
     pendingBody:
@@ -1297,7 +1328,7 @@ export const copy = {
     subtitle: 'Transfer SOL',
     subtitleUsdc: 'Transfer USDC',
     assetLabel: 'Asset',
-    assetSol: 'SOL',
+    assetSol: 'Solana',
     assetUsdc: 'USDC',
     toLabel: 'To',
     toPlaceholder: 'Solana address',
@@ -1311,8 +1342,8 @@ export const copy = {
     feeUnknown: 'Estimating…',
     feeUnavailable: 'Unavailable',
     feeRetry: 'Try again',
-    rentLabel: 'One-time token account cost',
-    rentRecovery: 'Recoverable when the token account is closed.',
+    rentLabel: 'One-time account cost',
+    rentRecovery: "This opens an account for this token at the receiving address. Only its owner can close it and get this back.",
     totalCostLabel: 'Total SOL cost',
     solRequiredLabel: 'SOL required',
     review: 'Review',
@@ -1372,9 +1403,11 @@ export const copy = {
     recentsLabel: 'Recent',
   },
   activity: {
+    valuesAsOf: (clock: string) => `Values as of ${clock}`,
+    valuesUnavailable: 'Values unavailable',
     costUnavailable: 'Not available',
-    accountRentLabel: 'One-time token account cost',
-    rentRecovery: 'Recoverable when the token account is closed.',
+    accountRentLabel: 'One-time account cost',
+    rentRecovery: "The account's owner can get this back if it's emptied and closed.",
     totalCostLabel: 'Total SOL fees and account costs',
     title: 'Activity',
     filterAll: 'All',
@@ -1393,7 +1426,7 @@ export const copy = {
     counterparty: 'Counterparty',
     explorer: 'See it on Solscan',
     explorerNetworkUnknown:
-      "We can't tell which network this is on, so we can't open Solscan.",
+      "We can't tell which network this is on, so we can't open the record.",
     copySignature: 'Copy reference',
     toastCopied: 'Reference copied',
     toastCopyFailed: "Couldn't copy. Try again.",
@@ -1422,29 +1455,28 @@ export const copy = {
     none: 'None',
     yes: 'Yes',
     no: 'No',
-    renounced: 'Renounced',
-    active: 'Active',
     verified: 'Verified',
     unverified: 'Unverified',
     verificationUnknown: 'Verification unknown',
     verifiedMeaning:
-      'Verified means Jupiter lists this exact mint as verified.',
-    mintTail: (tail: string) => `Mint …${tail}`,
-    mintAuthority: 'Mint authority',
-    freezeAuthority: 'Freeze authority',
+      'Verified means Jupiter lists this exact token as verified.',
+    mintTail: (tail: string) => `Address …${tail}`,
+    mintAuthority: 'Can more be made',
+    freezeAuthority: 'Can it be frozen',
     transferFee: 'Transfer fee',
-    transferFeeConfigured: (bps: number) => `Yes (${bps} bps)`,
+    transferFeeConfigured: (pct: string) => `Yes (${pct}%)`,
     transferFeeEstimated: (amount: string) =>
-      `Est. mint transfer fee on quoted receive: ~${amount}`,
-    transferHook: 'Transfer hook',
-    transferHookProgram: 'Transfer hook program',
-    transferHookAuthority: 'Transfer hook authority',
+      `This token's own transfer fee on what you get: about ${amount}`,
+    transferHook: 'Extra transfer rules',
+    transferHookProgram: 'Rules set by',
+    transferHookAuthority: 'Who can change the rules',
     permanentDelegate: 'Permanent delegate',
     permanentDelegateAddress: 'Permanent delegate address',
     defaultAccountFrozen: 'Default account frozen',
     topHolders: 'Top holders',
-    liquidity: 'Liquidity',
-    lpLocked: 'LP locked',
+    liquidity: 'Money in the pool',
+    inPool: (usd: string) => `${usd} in the pool`,
+    lpLocked: 'Pool money locked',
     panelTitle: 'Token details',
     panelTitlePayLeg: 'Token details · what you pay',
     panelTitleReceiveLeg: 'Token details · what you get',
@@ -1453,8 +1485,8 @@ export const copy = {
   assetDetail: {
     title: 'Asset',
     invalidTitle: 'Asset unavailable',
-    invalidBody: 'This asset link is missing a valid Solana mint.',
-    mint: 'Mint',
+    invalidBody: "This link doesn't point to a token we can open.",
+    mint: 'Token address',
     priceUnavailable: 'Price not shown on this screen',
     retry: 'Retry',
     buy: 'Buy',
@@ -1464,8 +1496,7 @@ export const copy = {
     holderCount: 'Holders',
     jupiterTopHolders: 'Top holders',
     top20Accounts: 'Top 20 accounts',
-    top20Methodology:
-      'Share of raw mint supply held by the 20 largest token accounts.',
+    top20Methodology: 'Share of all coins held by the 20 biggest holders.',
     attribution: (clock: string) => `as of ${clock}`,
   },
   chart: {
@@ -1475,7 +1506,7 @@ export const copy = {
     coverageTopIndexedPool: 'Top indexed pool',
     coverageTokenAggregated: 'Across all pools',
     poolTail: (tail: string) => `Pool …${tail}`,
-    poolLiquidity: 'Pool liquidity',
+    poolLiquidity: 'Money in the pool',
     poolVolume24h: '24h pool volume',
   },
   numberCraft: {
@@ -1514,18 +1545,17 @@ export const copy = {
       pay_decimals_unread:
         'Confirming this token before you can sell it',
       pay_decimals_mismatch:
-        "This token's decimals don't match what opened this screen. Corso won't size an amount on that.",
+        "This token's details don't match what we expected, so we won't fill in an amount. Go back and try again.",
     } as const,
     payBalanceUnavailableCta: 'Balance unavailable',
     unconfirmedSignature: (message: string, signature: string) =>
       `${message}\n\nReference: ${signature}`,
-    route: 'Route',
     price: 'Rate',
     networkFee: 'Network fee',
     costEstimating: 'Estimating…',
     totalCost: 'Total SOL fees and account costs',
-    accountRent: 'One-time token account cost',
-    rentRecovery: 'Recoverable when the token account is closed.',
+    accountRent: 'Account costs',
+    rentRecovery: 'Some account deposits may be recoverable when the account is closed.',
     corsoFee: 'Corso fee',
     // `usd` is quote-derived. The only literal amount allowed here is the
     // under-cent bound below; never replace this interpolator with a figure.
@@ -1541,24 +1571,15 @@ export const copy = {
     corsoFeeSolInputExplain:
       "This is Corso's fee, charged in SOL on top of the amount you pay, inside the transaction you sign.",
     minimumReceived: "You'll get at least",
-    priceImpact: 'Price impact',
+    priceImpact: 'Price shift from your trade',
     riskNotThisOne: 'Not this one',
     riskSwapAnyway: 'Swap anyway',
-    priceImpactUnknown: 'Price impact unknown',
-    slippage: 'Slippage',
+    priceImpactUnknown: 'Price shift unknown',
+    slippage: 'Max price move',
     slippageAuto: 'Auto',
-    routeBest: 'Best available route found.',
-    routeDetail: (impact: string) => `Best route selected · ${impact}`,
     routeProviderAttribution: 'via Metis',
     routeProviderAttributionAggregator: 'via Jupiter Meta-Aggregator',
     routeProviderPoweredBy: 'Powered by Jupiter',
-    routeNames: {
-      metis: 'Metis',
-      jupiterz: 'JupiterZ',
-      dflow: 'DFlow',
-      okx: 'OKX',
-    } as const,
-    routeUnknown: '—',
     routeDetailWithProvider: (impact: string, attribution: string) =>
       `${impact} · ${attribution}`,
     accessJurisdiction: "We can't offer this here.",
@@ -1583,7 +1604,14 @@ export const copy = {
       'Corso fee could not be verified on this quote. Try again later.',
     errorGeneric: "Couldn't swap. Try again.",
     errorQuote: "Couldn't get a quote. Try again.",
-    noRoute: 'No route is available for this swap.',
+    noRoute: "We couldn't get a price for this swap right now. Try a different amount or try again soon.",
+    /**
+     * W73. Same register and the same promise as `send.networkUnknownBody`,
+     * because it is the same refusal one door over: Corso declined to open an
+     * RPC connection it could not name the network for, so nothing was signed
+     * and nothing was submitted. Says the money did not move, takes the blame
+     * off the user, points at trying later.
+     */
     networkUnknown:
       "We can't confirm the network, so nothing will move. Not your fault. Your money is where it was. Try again in a few minutes.",
     networkUnknownTitle: "Can't swap right now",
@@ -1689,7 +1717,7 @@ export const copy = {
     template: {
       the_verdict: {
         name: 'The Verdict',
-        what: 'A read-only safety and structure check on any token you name. It reads. It never acts.',
+        what: 'A read-only check of any token you name: its risks and its trend. It reads. It never acts.',
         never: [
           'Never chooses the token. You name it.',
           'Never acts on what it reads.',
@@ -1698,7 +1726,7 @@ export const copy = {
       },
       heads_up: {
         name: 'Heads-Up',
-        what: 'Tells you when the chart structure of a token you name flips. It watches. It never acts.',
+        what: 'Tells you when the trend of a token you name flips. It watches. It never acts.',
         never: [
           'Never chooses the token. You name it.',
           'Never acts on its own.',
@@ -1733,7 +1761,7 @@ export const copy = {
             ? 'Would have fired once.'
             : `Would have fired ${count} times.`,
       fireAt: (when: string, price: string) => `${when} at ${price}`,
-      estSlippage: (bps: string) => `Estimated slippage ${bps}`,
+      estSlippage: (pct: string) => `Price could move about ${pct}`,
       thinData: 'Thin data in this window. Treat the count as a rough sketch.',
       safety: {
         asOfNow: 'Safety as of now',
@@ -1756,27 +1784,27 @@ export const copy = {
         unknown: 'Could not read this token.',
       } as const,
       confluence: {
-        timeframe: (timeframe: string) => `Chart structure ${timeframe}`,
+        timeframe: (timeframe: string) => `Trend ${timeframe}`,
         side: {
-          bear: 'Structure leans down.',
-          neutral: 'Structure is mixed.',
-          bull: 'Structure leans up.',
+          bear: 'The trend leans down.',
+          neutral: 'The trend is mixed.',
+          bull: 'The trend leans up.',
         } as const,
         score: (score: number) => `Confluence score ${score}`,
       },
       reading: {
-        mint_authority: 'Mint authority',
-        freeze_authority: 'Freeze authority',
-        lp_lock: 'Liquidity lock',
+        mint_authority: 'Can more be made',
+        freeze_authority: 'Can it be frozen',
+        lp_lock: 'Pool money lock',
         top10_concentration: 'Top-10 holders',
         transfer_fee: 'Transfer fee',
         mutable_metadata: 'Metadata',
-        rugged: 'Rug reports',
+        rugged: 'Pool emptied',
         insider_network: 'Insider network',
-        low_liquidity: 'Liquidity depth',
-        sniper_share: 'Snipers at launch',
+        low_liquidity: 'Money in the pool',
+        sniper_share: 'Launch bots',
         bundler_share: 'Bundled wallets',
-        insider_cluster: 'Insider clusters',
+        insider_cluster: 'Linked insider wallets',
         sources_reconciled: 'Source agreement',
         safety_sources: 'Safety sources',
       } as const,
@@ -1789,7 +1817,7 @@ export const copy = {
       disabled: 'Testing is not available.',
       unavailable: 'Test not available right now.',
       noData: 'Not enough history for this token.',
-      unsupportedNetwork: 'Testing runs on mainnet only.',
+      unsupportedNetwork: 'Testing works only on the main Solana network.',
       retry: 'Retry',
       informationNotAdvice: 'This is information, not advice.',
     },
@@ -1802,7 +1830,7 @@ export const copy = {
       timeframe: 'Timeframe',
       watchCta: 'Watch this token',
       watching: 'Adding watch...',
-      watched: 'Watch added. You will get a heads-up when the structure flips.',
+      watched: 'Watch added.',
       watchExists: 'You already watch this token at that timeframe.',
       watchUnavailable: 'Could not add this watch. Try again.',
       threshold: 'Threshold',
@@ -1820,8 +1848,8 @@ export const copy = {
       perFireMax: 'Most per swap',
       perDayMaxFires: 'Swaps per day',
       perDayMax: 'Most per day',
-      minOutBps: 'Slippage limit',
-      minOutBpsHint: 'Basis points. 100 is 1%.',
+      minOutBps: 'Max price move',
+      minOutBpsHint: 'As a percent. For example, 1%.',
       expiryDays: 'Ends in',
       expiryDaysHint: 'Days. 30 at most.',
       errors: {
@@ -1834,7 +1862,7 @@ export const copy = {
         perFireOverPerDay: 'Most per swap cannot exceed most per day.',
         safetyRequired: 'Pick a safety level.',
         perDayFiresRange: (max: number) => `Between 1 and ${max}.`,
-        minOutBpsRange: (max: number) => `Between 1 and ${max} basis points.`,
+        minOutBpsRange: (max: string) => `Between 0.01% and ${max}%.`,
         expiryRange: (max: number) => `Between 1 and ${max} days.`,
       },
       review: 'Review the envelope',
@@ -1843,7 +1871,7 @@ export const copy = {
         trade: 'Swap',
         mostPerTrade: 'Most per swap',
         mostPerDay: 'Most per day',
-        slippageLimit: 'Slippage limit',
+        slippageLimit: 'Max price move',
         ends: 'Ends',
       },
       tradeLine: (input: string, output: string, condition: string) =>
@@ -1865,7 +1893,7 @@ export const copy = {
   automation: {
     suspension: {
       standing:
-        'The on-chain approval is still standing until the owner signs a Revoke and it confirms.',
+        'Your permission on Solana stays in place until the owner signs a Revoke and it goes through.',
       cancel: 'Cancel rule',
       revoke: 'Sign Revoke',
       resumeUnavailable:
@@ -1873,18 +1901,18 @@ export const copy = {
       stateChanged: 'The rule changed. Check permissions, then try again.',
     },
     pauseApprovalUnknown:
-      'Any on-chain approval remains until the owner signs a Revoke and it confirms. Check token permissions to see whether an approval is standing.',
+      'Any permission you gave on Solana stays until the owner signs a Revoke and it goes through. Check token permissions to see if one is still in place.',
     pauseApproval:
-      'The on-chain approval is still standing until the owner signs a Revoke and it confirms.',
+      'Your permission on Solana stays in place until the owner signs a Revoke and it goes through.',
     checkPermissions: 'Check token permissions',
     revokeNeeded:
-      'This rule has stopped. Its on-chain allowance may still stand. The owner must sign a Revoke and wait for confirmation.',
+      'This rule has stopped. Its permission on Solana may still be in place. The owner must sign a Revoke and wait for it to go through.',
     revokeAction: 'Sign Revoke',
     revokeFee:
-      'This wallet pays the network fee in SOL. If it has too little SOL, add SOL and try again. The allowance remains until the Revoke confirms.',
+      'This account pays the network fee in SOL. If it has too little SOL, add SOL and try again. The allowance remains until the Revoke confirms.',
     revokeNone: 'No standing allowance needs a Revoke.',
     revokeFailed:
-      'The revoke is not confirmed. The allowance may still stand. Check the signature and try again.',
+      "The revoke hasn't gone through. The permission may still be in place. Check token permissions, then try again.",
 
     title: 'Rules',
     a11yTitle: 'Your rules',
@@ -1895,7 +1923,7 @@ export const copy = {
       dca: { title: 'Accumulate', what: 'buys on your schedule' },
     } as const,
     trustNote:
-      'A rule swaps the pair you name, inside the limits you set, until it expires. Solana caps each allowance you grant and limits it to the token account you approve. Corso holds that key and will not move funds out. Killing stops new swaps. The owner must sign a Revoke and wait for confirmation to remove the on-chain allowance. A swap already broadcast can still land; you always get the receipt.',
+      'A rule swaps the pair you name, inside the limits you set, until it expires. Solana caps each permission you grant and limits it to the one account you approve. Corso holds that key and will not move funds out. Killing stops new swaps. The owner must sign a Revoke and wait for confirmation to remove the permission on Solana. A swap already sent can still finish; you always get the receipt.',
     setup: {
       unavailable: 'This rule cannot run yet.',
     },
@@ -1907,7 +1935,7 @@ export const copy = {
         spend: (perSwap: string, perDay: string) =>
           `Spend up to ${perSwap} per swap, ${perDay} per day`,
         until: (when: string) =>
-          `Run until ${when}. Then it stops swapping. The on-chain allowance remains until the owner signs a Revoke and it confirms`,
+          `Run until ${when}. Then it stops swapping. The permission on Solana stays until the owner signs a Revoke and it goes through`,
       },
       chainHeading: 'Solana enforces',
       chain: {
@@ -1941,9 +1969,9 @@ export const copy = {
         },
       },
       signsNote:
-        'Running it signs one transaction: an allowance on one token account, up to the per swap amount you set, with no end date. Every other limit here is kept by Corso.',
+        'Running it signs one transaction: a permission on one account, up to the per-swap amount you set, with no end date. Corso keeps every other limit here.',
       killNote:
-        'Kill stops new swaps. The owner must sign a Revoke and wait for confirmation to remove the on-chain allowance. A swap already broadcast before the kill can still land; you’ll see its fill, receipt and all.',
+        "Kill stops new swaps. The owner must sign a Revoke and wait for it to go through to remove the permission on Solana. A swap already sent before the kill can still finish; you'll see it in Activity with its receipt.",
     },
     status: {
       ended: 'Ended after failed swaps',
@@ -1996,13 +2024,13 @@ export const copy = {
     resume: 'Resume',
     kill: 'Kill',
     killA11y: (name: string) =>
-      `Stop ${name}. The owner must sign a Revoke and wait for confirmation to remove its on-chain allowance.`,
+      `Stop ${name}. The owner must sign a Revoke and wait for it to go through to remove its permission on Solana.`,
     killState: {
       revoking: 'Revoking…',
       revokingBody:
-        'New swaps are stopped. The on-chain allowance may still stand until the owner signs a Revoke and it confirms.',
+        'New swaps are stopped. The permission on Solana may stay in place until the owner signs a Revoke and it goes through.',
       killed: 'Revoke confirmed · key revoked',
-      killedAt: (when: string) => `scoped key revoked on-chain · ${when}`,
+      killedAt: (when: string) => `Permission removed on Solana · ${when}`,
       broadcastBeforeKill: (count: number) =>
         count === 1
           ? '1 swap already broadcast before kill. Here’s the fill'
@@ -2108,12 +2136,12 @@ export const copy = {
       unknown: 'No curve reading in the feed',
     } as const,
     curve: (pct: string) => `curve ${pct}`,
-    lp: (usd: string) => `LP ${usd}`,
-    lpUnknown: 'LP unknown',
+    lp: (usd: string) => `Pool ${usd}`,
+    lpUnknown: 'Pool unknown',
     holders: (count: string) => `${count} holders`,
     holdersUnknown: 'holders unknown',
-    snipers: (pct: string) => `snipers ${pct}`,
-    snipersUnknown: 'snipers unknown',
+    snipers: (pct: string) => `launch bots ${pct}`,
+    snipersUnknown: 'launch bots unknown',
     verdict: {
       green: 'No flags found',
       amber: 'Caution',
@@ -2126,9 +2154,9 @@ export const copy = {
     ageDays: (days: number) => `${days}d old`,
     ageUnknown: 'age unknown',
     filters: {
-      lpFloor: (usd: string) => `LP ${usd}+`,
+      lpFloor: (usd: string) => `Pool ${usd}+`,
       holderFloor: (count: string) => `${count}+ holders`,
-      sniperCeiling: (pct: string) => `snipers under ${pct}`,
+      sniperCeiling: (pct: string) => `launch bots under ${pct}`,
       clear: 'Clear filters',
     },
     emptyTitle: 'Nothing clears your floors',
@@ -2167,11 +2195,11 @@ export const copy = {
       filtersButtonActiveA11y: (count: number) => `Open filters, ${count} on`,
       menu: {
         title: 'Filters',
-        lp: 'Liquidity',
+        lp: 'Pool size',
         lpDetail: (usd: string) => `${usd} or more`,
         holders: 'Holders',
         holdersDetail: (count: string) => `${count} or more`,
-        snipers: 'Sniper share',
+        snipers: 'Bought by launch bots',
         snipersDetail: (pct: string) => `under ${pct}`,
         hint: 'Floors hide rows. They do not judge them.',
         apply: 'Apply filters',
@@ -2201,7 +2229,9 @@ export const copy = {
   paper: { ...paperCopy },
   deskUtilities: { ...deskUtilitiesCopy },
   todayCard: { ...todayCardProposedCopy },
+  experienceMap: experienceMapCopy,
   launchDock: { ...launchDockCopy },
+  wealthV1: wealthV1Copy,
   howItWorks: { ...howItWorksCopy },
   aiConsent: { ...aiConsentCopy },
   aiConsentControl: { ...aiConsentControlCopy },
@@ -2227,7 +2257,7 @@ export const copy = {
   },
   fundingOi: {
     funding: 'Funding',
-    openInterest: 'Open interest',
+    openInterest: 'Open futures positions',
     today: 'today',
     yesterday: 'yesterday',
     venues: {

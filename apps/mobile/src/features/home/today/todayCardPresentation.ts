@@ -1,6 +1,10 @@
 import { copy } from '@/constants/copy';
 import { MAJOR_ASSETS, type MajorAsset } from '@/src/features/balances/majors';
 import type { PriceSnapshot } from '@/src/features/balances/priceSnapshot';
+import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
 import { formatObservationClock } from '@/src/features/home/asOfPresentation';
 import { formatPriceUsd } from '@/src/ui/format/numberCraft';
 import { presentFearGreedChip } from '@/src/features/swap/fearGreed/presentFearGreedChip';
@@ -57,7 +61,7 @@ export type TodayCardModel =
       asOf: string;
       rows: TodayRow[];
       askLabel: string;
-      /** `Crypto mood · Neutral 52`, or `null` → no chip (read missed). */
+      /** `Crypto mood · calm 52`, or `null` → no chip (read missed). */
       mood: string | null;
     }
   | { kind: 'unavailable'; label: string; line: string };
@@ -83,13 +87,14 @@ export function presentTodayMood(
   nowMs: number,
 ): string | null {
   const chip = presentFearGreedChip({ snapshot: mood, nowMs });
-  return chip ? copy.todayCard.mood(chip.classification, chip.value) : null;
+  return chip ? copy.todayCard.mood(chip.mood, chip.value) : null;
 }
 
 export function presentTodayCard(args: {
   prices: TodayPricesRead;
   changes: TodayChangeRead;
   nowMs: number;
+  failState?: ReadFailState;
   /** Omitted → no chip. */
   mood?: TodayMoodRead;
 }): TodayCardModel {
@@ -112,7 +117,7 @@ export function presentTodayCard(args: {
   const unavailable: TodayCardModel = {
     kind: 'unavailable',
     label,
-    line: copy.diyLists.pricesUnavailable,
+    line: readFailLine(args.failState, copy.diyLists.pricesUnavailable),
   };
   const snapshot = prices.snapshot;
   // A server-side kill switch answers with a disabled snapshot: that is the

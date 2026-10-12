@@ -85,6 +85,7 @@ export type AskSheetView = {
   readonly closeLabel: string;
   /** Empty state only. */
   readonly suggestions: readonly AskChip[];
+  readonly suggestionsLabel?: string | null;
   readonly composer: {
     readonly placeholder: string;
     readonly sendLabel: string;

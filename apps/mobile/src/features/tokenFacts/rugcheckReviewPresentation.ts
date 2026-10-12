@@ -1,3 +1,5 @@
+import { isMajorMint } from '@corso/swap-config';
+import type { PriceCluster } from '@/src/features/balances/priceSnapshot';
 import { colors } from '@/constants/theme';
 import { safetyCopy } from '@/constants/copy';
 
@@ -13,12 +15,22 @@ export type RugcheckReviewPresentation = Readonly<{
   acknowledgementKind: 'danger' | 'unchecked' | null;
 }>;
 
+/** Curated status is mint-exact and mainnet-only. */
+export function isCuratedMajor(
+  mint: string | null | undefined,
+  cluster: PriceCluster | null | undefined,
+): boolean {
+  return cluster === 'mainnet-beta' && !!mint && isMajorMint(mint);
+}
+
 export function resolveRugcheckReviewPresentation(args: {
+  curatedMajor?: boolean;
   tier: RugcheckRiskTier | null;
   descriptions: readonly string[];
   uncheckedUnverified?: boolean;
   unknownRequiresAcknowledgement?: boolean;
 }): RugcheckReviewPresentation {
+  if (args.curatedMajor === true) return neutralRugcheckPresentation();
   const description = args.descriptions[0]?.trim() || null;
   if (args.tier === 'Good') {
     return {
@@ -64,15 +76,22 @@ export function resolveRugcheckReviewPresentation(args: {
       acknowledgementKind: 'unchecked',
     };
   }
+  return neutralRugcheckPresentation(
+    args.unknownRequiresAcknowledgement === true,
+  );
+}
+
+function neutralRugcheckPresentation(
+  requiresAcknowledgement = false,
+): RugcheckReviewPresentation {
   return {
     tier: 'unknown',
     showVerifiedCheck: false,
     ambientDescription: null,
     dangerDescription: null,
     dangerTone: null,
-    requiresAcknowledgement: args.unknownRequiresAcknowledgement === true,
-    acknowledgementKind:
-      args.unknownRequiresAcknowledgement === true ? 'unchecked' : null,
+    requiresAcknowledgement,
+    acknowledgementKind: requiresAcknowledgement ? 'unchecked' : null,
   };
 }
 

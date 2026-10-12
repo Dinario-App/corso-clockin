@@ -1,5 +1,6 @@
 import { copy } from '@/constants/copy';
 import { clusterChipLabel } from '@/src/features/request/clusterChip';
+import { resolveAccountDisplayName } from '@/src/features/profile/accountDisplayName';
 import type { PublicAppConfig } from '@/src/lib/apiConfig';
 import { truncateAddress } from '@/src/lib/truncateAddress';
 import { colors, radii } from '@/src/ui/tokens';
@@ -18,8 +19,11 @@ export const RECEIVE_QR_MODULE_COLOR = colors.canvas;
 
 export type ReceivePresentation = {
   title: string;
-  accountName: string;
+  accountName: string | null;
   accountSub: string;
+  networkUnknown: boolean;
+  networkUnknownLabel: string;
+  networkRetryLabel: string;
   hasAddress: boolean;
   address: string | null;
   addressShort: string | null;
@@ -40,16 +44,25 @@ function normalizeAddress(value: unknown): string | null {
 export function resolveReceivePresentation(input: {
   address: unknown;
   cluster: PublicAppConfig['cluster'] | null | undefined;
+  /** The saved portfolio name: `null` none saved, `undefined` not read yet. */
+  portfolioName?: string | null;
+  networkUnknown?: boolean;
 }): ReceivePresentation {
   const address = normalizeAddress(input.address);
   const clusterLabel =
     input.cluster == null ? null : clusterChipLabel(input.cluster);
   return {
     title: copy.v1.receive,
-    accountName: copy.request.accountName,
+    accountName:
+      input.portfolioName === undefined
+        ? null
+        : resolveAccountDisplayName(input.portfolioName),
     accountSub: clusterLabel
       ? `${copy.request.network} · ${clusterLabel}`
       : copy.request.network,
+    networkUnknown: input.cluster == null && input.networkUnknown === true,
+    networkUnknownLabel: copy.profile.networkUnknown,
+    networkRetryLabel: copy.profile.networkRetry,
     hasAddress: address !== null,
     address,
     addressShort: address ? truncateAddress(address) : null,

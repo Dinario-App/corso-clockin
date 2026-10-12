@@ -1,4 +1,5 @@
 import { paperCopy } from '@/constants/copy/paper';
+import { bpsToExactPercent } from '@/src/lib/exactPercent';
 import type { PaperFire, PaperResult } from './paperClient';
 
 const c = paperCopy.result;
@@ -89,6 +90,9 @@ export function resolvePaperResultView(
     String(result.assumptions?.impact)
   ];
   if (!model) return null;
+  const slippagePct = bpsToExactPercent(result.assumptions.minOutBps);
+  const feePct = bpsToExactPercent(result.assumptions.feeBps);
+  if (slippagePct === null || feePct === null) return null;
   const pnl = formatUsdFloor(result.end.pnlUsd);
   return {
     banner: c.banner,
@@ -99,8 +103,8 @@ export function resolvePaperResultView(
       c.assumptionLatency(
         Math.max(1, Math.round(result.assumptions.latencyMs / 60_000)),
       ),
-      c.assumptionSlippage(result.assumptions.minOutBps),
-      c.assumptionFee(result.assumptions.feeBps),
+      c.assumptionSlippage(slippagePct),
+      c.assumptionFee(feePct),
       c.assumptionDepth(formatUsdFloor(result.assumptions.depthUsd)),
       c.assumptionMark,
     ],

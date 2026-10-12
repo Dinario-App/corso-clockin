@@ -14,17 +14,15 @@ import { useLaneGate } from '@/src/features/navigation/laneGates';
 import { BACK_FALLBACK } from '@/src/features/navigation/guardedBack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { copy } from '@/constants/copy';
-import {
-  colors,
-  kitType,
-  kitWeight,
-  radii,
-  spacing,
-  typography,
-} from '@/constants/theme';
+import { ethena, ethenaInk, HAIR } from '@/constants/theme.ethena';
+import { ethenaGeometry } from '@/constants/theme.ethenaGeometry';
+import { ETHENA_TYPE } from '@/constants/theme.ethenaType';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { useAccessibilityPreference } from '@/src/motion/useAccessibilityPreference';
-import { usePriceQuotes } from '@/src/features/balances/usePriceQuotes';
+import {
+  PRICE_QUOTES_REFRESH_MS,
+  usePriceQuotes,
+} from '@/src/features/balances/usePriceQuotes';
 import { useHoldings } from '@/src/features/balances/useHoldings';
 import { buildMajorDetailModel } from '@/src/features/balances/majorDetailPresentation';
 import { getMajorAsset, isMajorMint } from '@/src/features/balances/majors';
@@ -39,10 +37,13 @@ import {
   type BookSetPill,
 } from '@/src/features/balances/majorDetailFace';
 import { useFiatTotal } from '@/src/features/balances/useFiatTotal';
+import { readFailLine } from '@/src/features/connectivity/connectivity';
+import { useReadFailState } from '@/src/features/connectivity/useConnectivity';
 import { BALANCE_MASK } from '@/src/features/balances/hideBalances';
 import { useHideBalances } from '@/src/features/balances/hideBalancesPreference';
 import { resolveSwapEnabled } from '@/src/lib/apiConfig';
 import { useAcquireGateInputs } from '@/src/features/security/useAcquireGateInputs';
+import { useCuratedBook } from '@/src/features/universe/useCuratedBook';
 import { useChartRangePreference } from '@/src/features/prices/chartRangePreference';
 import { usePriceChartSeries } from '@/src/features/prices/usePriceChartSeries';
 import { useCorsoSession } from '@/src/features/session/SessionContext';
@@ -105,26 +106,32 @@ import { PriceChart } from '@/src/ui/charts/PriceChart';
 import { StructureRow } from '@/src/ui/charts/StructureRow';
 import {
   STRUCTURE_ROW_TIMEFRAME,
+  resolveAssetStructureRow,
   resolveStructureRowPresentation,
 } from '@/src/ui/charts/structureRowPresentation';
-import { IconCircleButton } from '@/src/ui/controls/IconCircleButton';
 import { PrimaryCTA } from '@/src/ui/controls/PrimaryCTA';
 import { SecondaryCTA } from '@/src/ui/controls/SecondaryCTA';
 import type { PriceChartRange } from '@/src/ui/charts/priceChartPresentation';
-import { GLASS_MUTE } from '@/src/ui/glass/glassTokens';
-import { Material } from '@/src/ui/glass/Material';
+import {
+  EthenaGround,
+  EthenaPill,
+  EthenaTray,
+} from '@/src/ui/ethena/EthenaPrimitives';
+import { CorsoIcon } from '@/src/ui/icons/CorsoIcon';
 import { CHART_SEED_DETAILS_RANGE_PARAM } from '@/src/ui/home/chartSeedCardPresentation';
 import { ScrollEdgeFade } from '@/src/ui/primitives/ScrollEdgeFade';
+import { SCROLL_FADE_TOP } from '@/src/ui/primitives/scrollEdgeFadePresentation';
 import { TokenMark } from '@/src/ui/primitives/TokenMark';
-import { SettingsCard } from '@/src/ui/cards/SettingsCard';
 import { readRingCopy } from '@/constants/copy/readRing';
 import { formatReadStamp } from '@/src/features/tokenVitals/readRingCatalog';
 import { EvidenceRow } from '@/src/ui/verdict/EvidenceRow';
-import { ReadRing } from '@/src/ui/verdict/ReadRing';
 import { VerdictCard } from '@/src/ui/verdict/VerdictCard';
 import { AssetInvalidLinkFace } from '@/src/ui/majorDetail/AssetInvalidLinkFace';
 import { MajorDetailCircle } from '@/src/ui/majorDetail/MajorDetailCircle';
+import { readWealthV1BuildFlag } from '@/src/features/wealth/wealthEnv';
 import { MajorDetailFace } from '@/src/ui/majorDetail/MajorDetailFace';
+import { usePlainRisk } from '@/src/features/plainRisk/usePlainRisk';
+import { RiskLevelSlot } from '@/src/ui/risk/RiskLevel';
 
 const EDGE_TIMEFRAME: SignalTimeframe = STRUCTURE_ROW_TIMEFRAME;
 
@@ -163,6 +170,7 @@ export default function AssetDetailScreen() {
   });
   const fiat = useFiatTotal(session?.address, { session, getAccessToken });
   const hideBalances = useHideBalances();
+  const failState = useReadFailState();
   const heldSell = resolveHeldSellDoor({
     mint: routeSeed.tokenFactsMint,
     cluster: holdingsCluster,
@@ -174,7 +182,10 @@ export default function AssetDetailScreen() {
     () => (routeSeed.tokenFactsMint ? [routeSeed.tokenFactsMint] : []),
     [routeSeed.tokenFactsMint],
   );
-  const prices = usePriceQuotes({ mints: priceMints });
+  const prices = usePriceQuotes({
+    mints: priceMints,
+    refreshIntervalMs: PRICE_QUOTES_REFRESH_MS,
+  });
   const [nowMs, setNowMs] = useState(() => Date.now());
   const majorDetail = useMemo(() => {
     const mintKey = routeSeed.tokenFactsMint;
@@ -214,6 +225,7 @@ export default function AssetDetailScreen() {
   const reportButtonRef = useRef<View>(null);
 
   const acquireGateInputs = useAcquireGateInputs();
+  const curated = useCuratedBook(true, holdingsCluster);
   const route = buildAssetDetailRouteModel({
     rawMint,
     state: {
@@ -224,6 +236,9 @@ export default function AssetDetailScreen() {
     nowMs,
     heldSell,
     acquireGateInputs,
+    // Absent until the read is over, so the Other holdings line never
+    // flashes on a served name while the book loads.
+    curatedBook: curated.settled ? curated.book : undefined,
   });
   const { mint, model } = route;
   const fullChartHref =
@@ -237,6 +252,7 @@ export default function AssetDetailScreen() {
     focused,
     enabled: fullChartEnabled,
   });
+  const plainRisk = usePlainRisk(mint);
   const chart = useChartBundle({
     mint: fullChartEnabled ? mint : null,
     timeframe: EDGE_TIMEFRAME,
@@ -333,7 +349,7 @@ export default function AssetDetailScreen() {
     nowMs: chart.lastFetchedAtMs ?? nowMs,
   });
   const lineMarks = lineOnly ? null : resolveChartLineMarks(edge);
-  const structure = resolveStructureRowPresentation({
+  const structureRead = resolveStructureRowPresentation({
     enabled: fullChartEnabled,
     signal: signal.presentation,
     chart,
@@ -342,6 +358,7 @@ export default function AssetDetailScreen() {
       lastFetchedAtMs: chart.lastFetchedAtMs,
     }),
   });
+  const structure = resolveAssetStructureRow(structureRead);
   const marketSource = fullChartEnabled ? payload : null;
   const showMarket = resolveMarketRowPresentation(marketSource) != null;
   const labelWithheld = model?.header.labelWithheld ?? false;
@@ -401,6 +418,7 @@ export default function AssetDetailScreen() {
           swapsOff: swapEnabled === false,
           sellWithheldNote: model?.sellWithheldNote ?? null,
           hideBalances,
+          failState,
         })
       : null;
   const buyHref =
@@ -424,6 +442,7 @@ export default function AssetDetailScreen() {
         onBuy={() => {
           if (buyHref) router.push(buyHref);
         }}
+        wait={readWealthV1BuildFlag()}
         onSell={() => {
           if (sellHref) router.push(sellHref);
         }}
@@ -488,9 +507,15 @@ export default function AssetDetailScreen() {
   }
 
   return (
+    <EthenaGround>
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      {/*
+        Still 04 `.topbar` — the asset shell's 40 tray disc
+        (`MajorDetailCircle`, a 44 dp press target) and no nav title: the
+        identity row below names the token, once.
+      */}
       <View style={styles.header}>
-        <IconCircleButton
+        <MajorDetailCircle
           glyph="chevron-left"
           onPress={() => goBackOr(BACK_FALLBACK.shell)}
           accessibilityLabel={copy.v1.back}
@@ -509,7 +534,7 @@ export default function AssetDetailScreen() {
           ) : null}
           {mint != null ? (
             <View ref={reportButtonRef} collapsable={false}>
-              <IconCircleButton
+              <MajorDetailCircle
                 glyph="more"
                 onPress={() =>
                   report.open(
@@ -547,8 +572,9 @@ export default function AssetDetailScreen() {
           showsVerticalScrollIndicator={false}
         >
           {mint == null || model == null ? (
-            <SettingsCard style={styles.card} contentStyle={styles.cardContent}>
+            <EthenaTray testID="token-detail-invalid" style={styles.card}>
               <View
+                style={styles.cardContent}
                 accessibilityRole="alert"
                 accessibilityLabel={`${copy.assetDetail.invalidTitle}. ${copy.assetDetail.invalidBody}`}
               >
@@ -559,7 +585,7 @@ export default function AssetDetailScreen() {
                   {copy.assetDetail.invalidBody}
                 </CorsoText>
               </View>
-            </SettingsCard>
+            </EthenaTray>
           ) : (
             <>
               {majorDetail ? (
@@ -624,30 +650,12 @@ export default function AssetDetailScreen() {
                 </View>
               ) : null}
               <View style={styles.identity}>
-                {verdictRing === null ? (
-                  <TokenMark
-                    ticker={symbol}
-                    mint={mint}
-                    size={IDENTITY_MARK_SIZE}
-                    accessibilityLabel={`${symbol} token`}
-                  />
-                ) : (
-                  <ReadRing
-                    cells={verdictRing.cells}
-                    verdict={verdictRing.verdict}
-                    placement="face"
-                    drawKey={mint}
-                    accessibilityLabel={verdictRing.accessibilityLabel}
-                    testID="token-detail-face-ring"
-                  >
-                    <TokenMark
-                      ticker={symbol}
-                      mint={mint}
-                      size={IDENTITY_MARK_SIZE}
-                      accessibilityLabel={`${symbol} token`}
-                    />
-                  </ReadRing>
-                )}
+                <TokenMark
+                  ticker={symbol}
+                  mint={mint}
+                  size={IDENTITY_MARK_SIZE}
+                  accessibilityLabel={`${symbol} token`}
+                />
                 {!majorDetail && (
                   <View style={styles.identityName}>
                     <CorsoText
@@ -674,7 +682,10 @@ export default function AssetDetailScreen() {
                 {!majorDetail && (
                   <View style={styles.identityPrice}>
                     <CorsoText style={styles.price} numberOfLines={1}>
-                      {priceText ?? copy.tokenDetail.priceUnknown}
+                      {readFailLine(
+                        priceText ? null : failState,
+                        priceText ?? copy.tokenDetail.priceUnknown,
+                      )}
                     </CorsoText>
                     {mover ? (
                       <CorsoText
@@ -697,6 +708,14 @@ export default function AssetDetailScreen() {
                 {model.header.identityLine}
               </CorsoText>
 
+              <View style={styles.risk}>
+                <RiskLevelSlot
+                  read={plainRisk}
+                  size="cell"
+                  testID="token-detail-risk"
+                />
+              </View>
+
               {/*
                 The verdict leads — the shared atom, or the state it is in.
                 `unread` gets the atom too, but only when a ring came back:
@@ -711,8 +730,8 @@ export default function AssetDetailScreen() {
                     verdict.kind === 'ready' ? verdict.word : verdict.message
                   }
                   ring={verdict.ring}
-                  /** The face already wears the ring; the card doesn't repeat it. */
                   ringPlacement="none"
+                  coverage="none"
                   stampText={stampText}
                   subLine={
                     verdict.kind === 'ready'
@@ -738,11 +757,9 @@ export default function AssetDetailScreen() {
                   testID="token-detail-verdict"
                 />
               ) : (
-                <Material
-                  weight="card"
-                  radius={radii.verdict}
-                  style={styles.verdict}
-                  contentStyle={styles.verdictState}
+                <EthenaTray
+                  testID="token-detail-verdict-state"
+                  style={{ ...styles.verdict, ...styles.verdictState }}
                 >
                   <CorsoText
                     style={styles.verdictStateWord}
@@ -764,16 +781,15 @@ export default function AssetDetailScreen() {
                     </View>
                   ) : null}
                   {verdict.kind === 'unavailable' ? (
-                    <Pressable
-                      onPress={vitals.refresh}
-                      accessibilityRole="button"
-                      accessibilityLabel={copy.vitals.retry}
-                      style={styles.retryInline}
-                    >
-                      <CorsoText style={styles.retryText}>
-                        {copy.vitals.retry}
-                      </CorsoText>
-                    </Pressable>
+                    <View style={styles.retryRow}>
+                      <EthenaPill
+                        testID="token-detail-vitals-retry"
+                        label={copy.vitals.retry}
+                        accessibilityLabel={copy.vitals.retry}
+                        plane="floatAction"
+                        onPress={vitals.refresh}
+                      />
+                    </View>
                   ) : null}
                   {primaryDoor ? (
                     <PrimaryCTA
@@ -784,7 +800,7 @@ export default function AssetDetailScreen() {
                       style={styles.stateDoor}
                     />
                   ) : null}
-                </Material>
+                </EthenaTray>
               )}
 
               {verdictRing === null ? null : (
@@ -840,11 +856,9 @@ export default function AssetDetailScreen() {
                 </View>
               ) : null}
 
-              <Material
-                weight="card"
-                radius={radii.pane}
-                style={styles.chart}
-                contentStyle={styles.chartContent}
+              <EthenaTray
+                testID="token-detail-chart-card"
+                style={{ ...styles.chart, ...styles.chartContent }}
               >
                 <PriceChart
                   mint={mint}
@@ -863,7 +877,7 @@ export default function AssetDetailScreen() {
                   presentation={structure}
                   testID="token-detail-structure"
                 />
-              </Material>
+              </EthenaTray>
               {fullChartHref ? (
                 <SecondaryCTA
                   label={copy.chartEdge.openTerminal}
@@ -895,9 +909,13 @@ export default function AssetDetailScreen() {
             </>
           )}
         </ScrollView>
-        <ScrollEdgeFade testID="token-detail-scroll-fade" />
+        <ScrollEdgeFade
+          testID="token-detail-scroll-fade"
+          color={ethena.groundStops[0][1]}
+        />
       </View>
     </SafeAreaView>
+    </EthenaGround>
   );
 }
 
@@ -936,7 +954,7 @@ function EvidenceLedger({
   const checkCount = 1 + provenanceRows.length + panel.rows.length;
 
   return (
-    <SettingsCard style={styles.card} contentStyle={styles.ledger}>
+    <EthenaTray testID="token-detail-evidence" style={styles.ledger}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityRole="button"
@@ -966,7 +984,11 @@ function EvidenceLedger({
           ]}
           pointerEvents="none"
         >
-          <CorsoText style={styles.ledgerChevronGlyph}>⌄</CorsoText>
+          <CorsoIcon
+            name="chevron-down"
+            size={16}
+            color={ethenaInk.tertiary}
+          />
         </Animated.View>
       </Pressable>
 
@@ -1003,21 +1025,20 @@ function EvidenceLedger({
             <TokenFactsPanel model={panel} />
           </View>
           {factsFailed ? (
-            <Pressable
-              onPress={onRetryFacts}
-              accessibilityRole="button"
-              accessibilityLabel={copy.assetDetail.retry}
-              accessibilityHint={factsError ?? copy.tokenFacts.unavailable}
-              style={styles.retryButton}
-            >
-              <CorsoText style={styles.retryText}>
-                {copy.assetDetail.retry}
-              </CorsoText>
-            </Pressable>
+            <View style={styles.retryRow}>
+              <EthenaPill
+                testID="token-detail-facts-retry"
+                label={copy.assetDetail.retry}
+                accessibilityLabel={copy.assetDetail.retry}
+                accessibilityHint={factsError ?? copy.tokenFacts.unavailable}
+                plane="floatAction"
+                onPress={onRetryFacts}
+              />
+            </View>
           ) : null}
         </View>
       ) : null}
-    </SettingsCard>
+    </EthenaTray>
   );
 }
 
@@ -1044,17 +1065,14 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.canvas,
-  },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: TOKEN_DETAIL_GUTTER,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   headerFill: { flex: 1 },
   headerSpacer: {
@@ -1066,88 +1084,86 @@ const styles = StyleSheet.create({
   },
   /** The fades pin to this box, so the scroller needs a positioned parent. */
   scrollWrap: { flex: 1 },
+  /**
+   * The first row starts below the top fade on the lit ground, so nothing is
+   * dissolved at rest (`scrollEdgeFadeConsumers.test.ts`), as on the major face.
+   */
   content: {
+    paddingTop: SCROLL_FADE_TOP,
     paddingHorizontal: TOKEN_DETAIL_GUTTER,
-    paddingBottom: spacing.xl * 2,
+    paddingBottom: 64,
   },
   identity: {
-    marginTop: spacing.sm,
     paddingHorizontal: 2,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   identityName: { flex: 1, minWidth: 0 },
-  /** The rating's scope line — 13 `grey2`, under the card, never in it. */
+  risk: { marginTop: 12, paddingHorizontal: 2 },
+  /** The rating's scope line — 13 in ink-3, under the card, never in it. */
   readRingFootnote: {
+    ...ETHENA_TYPE.rowSub,
     marginTop: 10,
     paddingHorizontal: 2,
-    fontSize: kitType.caption,
-    lineHeight: 18,
-    color: colors.inkTertiary,
+    color: ethenaInk.tertiary,
   },
   majorChrome: {
     gap: 4,
     marginBottom: 12,
   },
   majorEyebrow: {
-    color: colors.inkTertiary,
-    fontSize: kitType.caption,
-    lineHeight: 18,
-    fontWeight: kitWeight.medium,
+    ...ETHENA_TYPE.rowSub,
+    color: ethenaInk.tertiary,
+    fontWeight: '500',
   },
+  /** `.wh b` — the card-heading step, 17/22/600. */
   identityTitle: {
-    fontSize: kitType.title,
-    lineHeight: 26,
-    fontWeight: kitWeight.semibold,
-    letterSpacing: -0.48,
-    color: colors.ink,
+    ...ETHENA_TYPE.cardHeading,
+    color: ethenaInk.primary,
   },
+  /** `.sub` — 15/20 in ink-2. */
   identitySub: {
+    ...ETHENA_TYPE.sub,
     marginTop: 2,
-    color: colors.inkSecondary,
-    fontSize: kitType.sub,
-    letterSpacing: -0.12,
+    color: ethenaInk.secondary,
   },
   identityPrice: { alignItems: 'flex-end', flexShrink: 0 },
+  /** `.row .v b` — 17/22/500: the price, printed once on this screen. */
   price: {
-    color: colors.ink,
-    fontSize: kitType.title,
-    lineHeight: 26,
-    fontWeight: kitWeight.semibold,
-    letterSpacing: -0.48,
+    ...ETHENA_TYPE.rowValue,
+    color: ethenaInk.primary,
   },
+  /** `.row .v span` — 13/18 on its own hue: the chart window's change. */
   moverText: {
+    ...ETHENA_TYPE.rowDelta,
     marginTop: 2,
-    fontSize: kitType.sub,
-    fontWeight: kitWeight.medium,
+    fontWeight: '500',
   },
   title: {
-    fontSize: typography.title,
-    fontWeight: '600',
-    color: colors.ink,
+    ...ETHENA_TYPE.cardHeading,
+    color: ethenaInk.primary,
   },
   muted: {
-    marginTop: spacing.sm,
-    color: colors.muted,
-    fontSize: typography.body,
+    ...ETHENA_TYPE.body,
+    marginTop: 8,
+    color: ethenaInk.secondary,
   },
   provenance: {
-    marginTop: spacing.xs,
-    color: colors.inkTertiary,
-    fontSize: typography.caption,
+    ...ETHENA_TYPE.keyValueInfo,
+    marginTop: 4,
+    color: ethenaInk.tertiary,
   },
-  verdict: { marginTop: spacing.smd },
-  /** Off / checking / unavailable / unread: the pane, repainted, told plainly. */
+  verdict: { marginTop: 12 },
+  /** Off / checking / unavailable / unread: the tray, told plainly. */
   verdictState: {
-    paddingTop: 18,
-    paddingHorizontal: 18,
+    paddingTop: 16,
     paddingBottom: 16,
-    gap: spacing.smd,
+    gap: 12,
   },
   verdictStateWord: {
-    color: GLASS_MUTE,
-    fontSize: typography.body,
+    ...ETHENA_TYPE.keyValue,
+    color: ethenaInk.secondary,
     fontWeight: '500',
   },
   receipts: {
@@ -1156,104 +1172,82 @@ const styles = StyleSheet.create({
   stateDoor: { marginBottom: 0 },
   actions: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.smd,
+    gap: 8,
+    marginTop: 12,
   },
   action: { flex: 1, marginBottom: 0 },
   noDoorNote: {
-    marginTop: spacing.smd,
-    paddingHorizontal: spacing.xs,
-    color: colors.inkSecondary,
-    fontSize: typography.caption,
-    lineHeight: 18,
+    ...ETHENA_TYPE.rowSub,
+    marginTop: 12,
+    paddingHorizontal: 4,
+    color: ethenaInk.secondary,
   },
-  chart: { marginTop: spacing.smd },
+  chart: { marginTop: 12 },
   chartContent: {
     paddingTop: TOKEN_DETAIL_CHART_CARD.paddingTop,
     paddingHorizontal: TOKEN_DETAIL_CHART_CARD.paddingHorizontal,
     paddingBottom: TOKEN_DETAIL_CHART_CARD.paddingBottom,
   },
-  fullChartDoor: { marginTop: spacing.smd, marginBottom: 0 },
-  market: { marginTop: spacing.smd },
-  /** Outer box only — the material, radius and clipping are the pane's. */
+  fullChartDoor: { marginTop: 12, marginBottom: 0 },
+  market: { marginTop: 12 },
+  /** Outer box only — the tray owns the fill, the rim and the radius. */
   card: {
-    marginTop: spacing.smd,
+    marginTop: 12,
   },
   cardContent: {
-    padding: spacing.md,
-    gap: spacing.md,
+    paddingVertical: ethenaGeometry.pad,
+    gap: ethenaGeometry.pad,
   },
-  ledger: {},
+  /** `.evidence` — the tray's 16 side pad; the head and body own the rest. */
+  ledger: { marginTop: 12, paddingHorizontal: 0 },
+  /** `.ev-head` — `padding:14px 16px`. */
   ledgerHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: ethenaGeometry.pad,
     paddingVertical: 14,
   },
   ledgerTitle: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    letterSpacing: -0.15,
-    color: colors.ink,
+    ...ETHENA_TYPE.keyValueTotal,
+    color: ethenaInk.primary,
   },
+  /** `.cnt` — the row-sub step in ink-3. */
   ledgerCount: {
-    fontSize: 12.5,
-    fontWeight: '500',
-    color: colors.inkTertiary,
+    ...ETHENA_TYPE.rowSub,
+    color: ethenaInk.tertiary,
   },
+  /** `.chev` — `margin-left:auto`. */
   ledgerChevron: { marginLeft: 'auto' },
-  ledgerChevronGlyph: {
-    color: colors.inkQuaternary,
-    fontSize: 14,
-    lineHeight: 14,
-  },
+  /** `.ev-body` — `padding:0 16px 8px`, groups split by the tray hairline. */
   ledgerBody: {
-    paddingHorizontal: 16,
-    paddingBottom: spacing.sm,
-    gap: spacing.md,
+    paddingHorizontal: ethenaGeometry.pad,
+    paddingBottom: 8,
+    paddingTop: 12,
+    gap: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIR,
   },
-  ledgerGroup: { gap: spacing.sm },
-  retryButton: {
-    alignSelf: 'flex-start',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.ink,
-    borderRadius: radii.cta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  retryInline: {
-    alignSelf: 'flex-start',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.ink,
-    borderRadius: radii.cta,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  retryText: {
-    color: colors.ink,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
+  ledgerGroup: { gap: 8 },
+  retryRow: { flexDirection: 'row' },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: 16,
   },
   sectionTitle: {
-    color: colors.ink,
-    fontSize: typography.body,
-    fontWeight: '600',
+    ...ETHENA_TYPE.keyValueTotal,
+    color: ethenaInk.primary,
   },
-  provenanceRow: { gap: spacing.xs },
+  provenanceRow: { gap: 4 },
   rowLabel: {
-    color: colors.inkTertiary,
-    fontSize: 12.5,
+    ...ETHENA_TYPE.rowSub,
+    color: ethenaInk.tertiary,
     fontWeight: '500',
   },
   rowValue: {
-    color: colors.ink,
-    fontSize: 13,
+    ...ETHENA_TYPE.rowSub,
+    color: ethenaInk.primary,
     fontWeight: '600',
     flexShrink: 1,
     textAlign: 'right',

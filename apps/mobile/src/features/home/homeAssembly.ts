@@ -33,6 +33,7 @@ import type { VerdictTone } from '@/src/ui/verdict/verdictCardPresentation';
 import type { HomeAskPhase } from './homeEmptyPresentation';
 import type { AnswerReportTarget } from '@/src/features/moderation/submitAnswerReport';
 
+
 export type HomeAssemblyCheck = {
   key: string;
   label: string;

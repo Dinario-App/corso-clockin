@@ -1,6 +1,8 @@
 import { copy } from '@/constants/copy';
 import { disclosureFlags } from '@/src/features/tokenFacts/disclosurePolicy';
+import { bpsToExactPercent } from '@/src/lib/exactPercent';
 import {
+  isCuratedMajor,
   resolveRugcheckReviewPresentation,
   type RugcheckReviewPresentation,
 } from '@/src/features/tokenFacts/rugcheckReviewPresentation';
@@ -65,7 +67,7 @@ export function buildTokenIdentityPresentation(args: {
       args.liquidityUsd != null &&
       Number.isFinite(args.liquidityUsd) &&
       args.liquidityUsd >= 0
-        ? `${formatOptionalUsd(args.liquidityUsd)} liquidity`
+        ? copy.tokenFacts.inPool(formatOptionalUsd(args.liquidityUsd))
         : null,
   };
 }
@@ -73,8 +75,8 @@ export function buildTokenIdentityPresentation(args: {
 export function formatAuthorityStatus(
   status: AuthorityStatus | null | undefined,
 ): string {
-  if (status === 'renounced') return copy.tokenFacts.renounced;
-  if (status === 'present') return copy.tokenFacts.active;
+  if (status === 'renounced') return copy.tokenFacts.no;
+  if (status === 'present') return copy.tokenFacts.yes;
   return copy.tokenFacts.unknown;
 }
 
@@ -167,7 +169,10 @@ function formatTransferFeeValue(
     return formatOptionalBoolean(fields.transferFee);
   }
   if (fields.transferFeeBasisPoints != null) {
-    return copy.tokenFacts.transferFeeConfigured(fields.transferFeeBasisPoints);
+    const percent = bpsToExactPercent(fields.transferFeeBasisPoints);
+    return percent === null
+      ? copy.tokenFacts.unknown
+      : copy.tokenFacts.transferFeeConfigured(percent);
   }
   return copy.tokenFacts.yes;
 }
@@ -394,6 +399,7 @@ export function buildSwapReviewFactsPanel(args: {
 }
 
 export function buildPickerRowRisk(args: {
+  mint?: string;
   status: TokenFactsHookStatus;
   facts: TokenFactsResponse | null;
 }): RugcheckReviewPresentation {
@@ -408,6 +414,7 @@ export function buildPickerRowRisk(args: {
       : null;
 
   return resolveRugcheckReviewPresentation({
+    curatedMajor: isCuratedMajor(args.mint ?? facts?.mint, facts?.cluster),
     tier: resolved?.fields.riskLevel ?? null,
     descriptions: resolved?.fields.riskDescriptions ?? [],
   });
@@ -441,7 +448,7 @@ export function buildPickerFactsSubtitle(args: {
   if (args.includeIdentity !== false) {
     const liquidity = facts.sources.jupiter.fields.liquidityUsd;
     if (facts.sources.jupiter.status === 'ok' && liquidity != null) {
-      parts.push(`${formatOptionalUsd(liquidity)} liquidity`);
+      parts.push(copy.tokenFacts.inPool(formatOptionalUsd(liquidity)));
     } else if (facts.sources.jupiter.status !== 'ok') {
       parts.push(`${copy.tokenFacts.liquidity} ${copy.tokenFacts.unknown.toLowerCase()}`);
     }

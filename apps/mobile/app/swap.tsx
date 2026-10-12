@@ -1,3 +1,4 @@
+import { registerSwapResume, takeSwapResume, clearSwapResume, type SwapResumeInputs } from '@/src/features/swap/lockResume';
 import { assertMwaMoneyPathAvailable } from '@/src/features/connect/assertMwaMoneyPathAvailable';
 import { captureReceiptReview, freezeSeenReview, saveConfirmedReceipt, warnReceiptSnapshotFailure, type ReceiptCapture } from '@/src/features/activity/receiptCapture';
 import type { ReviewWhyBlock } from '@corso/why';
@@ -86,7 +87,6 @@ import { computeSwapQuoteDigest } from '@/src/features/swap/quoteDigest';
 import { swapQuoteErrorMessage } from '@/src/features/swap/swapQuoteErrorMessage';
 import {
   resolveSwapRouteAttribution,
-  resolveSwapRouteDisplayName,
 } from '@/src/features/swap/routeAttribution';
 import {
   requestSwapOrder,
@@ -228,6 +228,8 @@ import {
 import {
   filterHeldSwapTokens,
 } from '@/src/features/swap/heldTokenPicker';
+import { isCuratedMint } from '@/src/features/universe/curatedBook';
+import { useCuratedBook } from '@/src/features/universe/useCuratedBook';
 import {
   resolveSwapReceiveDisplay,
   resolveSwapReceiveTone,
@@ -522,6 +524,27 @@ export default function SwapScreen() {
     setQuoteError(null);
   }
 
+  const resumeInputsRef = useRef<SwapResumeInputs | null>(null);
+  resumeInputsRef.current = session && cluster && (step === 'compose' || step === 'review')
+    ? { owner: session, cluster, paySymbol, payPick, receivePick, amount } : null;
+  const revokeResumeQuoteRef = useRef(() => {});
+  revokeResumeQuoteRef.current = () => { if (resumeInputsRef.current) clearQuoteStateSync(); };
+  useEffect(() => registerSwapResume(
+    () => resumeInputsRef.current,
+    () => revokeResumeQuoteRef.current(),
+  ), []);
+  useEffect(() => () => {
+    confirmValidRef.current = false;
+    quoteAbortRef.current?.abort();
+    quoteGateRef.current.invalidate();
+  }, []);
+
+  /**
+   * ⛔ `null` until the network is known. `tokenForSymbol` takes a cluster and
+   * hands back a mint, so calling it with anything other than a resolved
+   * cluster is the bug: on devnet-by-default it named the devnet SOL/USDC mints
+   * for a mainnet wallet.
+   */
   const payToken = useMemo(
     () =>
       payPick ?? (cluster ? tokenForSymbol(paySymbol, cluster) : null),
@@ -541,8 +564,11 @@ export default function SwapScreen() {
   }, [payToken, receiveToken]);
   const chartPrices = usePriceQuotes({ mints: chartMints });
   const receiveSymbol = receiveToken?.symbol ?? '';
-  /** Flipping is only honest when the receive side is something they can pay with. */
-  const canFlip = receiveSymbol === 'SOL' || receiveSymbol === 'USDC';
+  const curated = useCuratedBook(true, cluster);
+  const canFlip =
+    (receiveSymbol === 'SOL' || receiveSymbol === 'USDC') &&
+    payToken != null &&
+    isCuratedMint(curated.book, payToken.mint);
   // `useTokenFacts` already takes `null` and stays idle on it, so an unresolved
   // network reads no facts rather than reading facts for a guessed mint.
   const receiveTokenFacts = useTokenFacts(receiveToken?.mint ?? null);
@@ -557,6 +583,7 @@ export default function SwapScreen() {
     cluster,
   });
   const liveRugcheck = resolveSwapRiskPresentation({
+    cluster,
     leg: riskLeg,
     payMint: payToken?.mint ?? null,
     receiveMint: receiveToken?.mint ?? null,
@@ -661,11 +688,25 @@ export default function SwapScreen() {
 
   const askPrefillApplied = useRef(false);
   useEffect(() => {
-    if (askPrefillApplied.current || !cluster) return;
+    if (askPrefillApplied.current || !cluster || !curated.settled) return;
+    // An explicit door names the new trade; an orphan lock draft cannot override it.
+    const hasExplicitPrefill = Object.values(routeParams).some(value => value !== undefined && value !== '');
+    if (hasExplicitPrefill) clearSwapResume();
+    const recovered = hasExplicitPrefill ? null : takeSwapResume(session, cluster);
+    if (recovered) {
+      askPrefillApplied.current = true;
+      clearQuoteStateSync();
+      setPaySymbol(recovered.paySymbol);
+      setPayPick(recovered.payPick);
+      setReceivePick(recovered.receivePick);
+      setAmount(recovered.amount);
+      return;
+    }
     if (routeParams.alertTap) {
       askPrefillApplied.current = true;
       if (!alertTapForLifetime || alertTapForLifetime.owner !== session || cluster !== 'mainnet-beta') return;
       const prefill = alertTapForLifetime.prefill;
+      if (!isCuratedMint(curated.book, prefill.receive.mint)) return;
       clearQuoteStateSync();
       if (prefill.pay.kind === 'held') setPayPick(prefill.pay.token);
       else { setPayPick(null); setPaySymbol(prefill.pay.symbol); }
@@ -704,6 +745,7 @@ export default function SwapScreen() {
     const prefill = askPrefill ?? assetPrefill;
     if (!prefill) return;
     askPrefillApplied.current = true;
+    if (!isCuratedMint(curated.book, prefill.receive.mint)) return;
     const prefillPay: AssetPrefillPay | null = askPrefill
       ? { kind: 'symbol', symbol: askPrefill.paySymbol }
       : (assetPrefill?.pay ?? null);
@@ -718,6 +760,8 @@ export default function SwapScreen() {
     if (askPrefill) setAmount(askPrefill.amount);
   }, [
     cluster,
+    curated.settled,
+    curated.book,
     routeParams.alertTap,
     session,
     routeParams.askFromSymbol,
@@ -1224,332 +1268,354 @@ export default function SwapScreen() {
   async function onConfirmSwap() {
     if (!order || !session?.address || !quoteDigest || !frozenIntent) return;
     if (confirmationPendingRef.current) return;
-    if (!payToken || !receiveToken || !swapMayQuoteOnNetwork(networkGate)) {
-      showFail(copy.swap.networkUnknown);
-      return;
-    }
-    // Re-bound under non-null names for the same reason `confirmedOrder` and
-    // friends are below: TypeScript does not carry a guard's narrowing across
-    // the `proceedWithConfirmedSwap` function boundary.
-    const confirmPayToken: SwapToken = payToken;
-    const confirmReceiveToken: SwapToken = receiveToken;
-    // Synchronous epoch check before any step-up / sign work.
-    if (!confirmValidRef.current) {
-      showFail('Quote changed since review. Go back and quote again.');
-      return;
-    }
-    const appliedQuote = quoteAppliedAtRef.current;
-    const quoteAgeEventAtConfirm =
-      appliedQuote?.requestId === order.requestId
-        ? quoteAgeAtSigningEvent({
-            quoteAppliedAtMs: appliedQuote.atMs,
-            nowMs: Date.now(),
-          })
-        : null;
-    // Wait for the mount load if it is still in flight, so a fast confirm is
-    // not refused on the pre-load `false` below.
-    //
-    // ⚠️ This await is safe *only* because what follows reads a ref, not state.
-    // `readJurisdictionGateInputs` exists precisely because awaiting here and
-    // then reading React state was the fail-open — the closure never refreshes.
-    // `disclosuresReadyRef.current` is a fresh read, so it sees the load's
-    // value. Neither branch of the load rejects (`loadJurisdictionGateInputs`
-    // and `resolveDisclosures` both swallow their own failures), so this await
-    // cannot throw past the guards below.
-    if (configLoadRef.current) {
-      await configLoadRef.current;
-    }
+    // Own admission before any asynchronous gate, through submit and cleanup.
+    confirmationPendingRef.current = true;
+    try {
+      if (!payToken || !receiveToken || !swapMayQuoteOnNetwork(networkGate)) {
+        showFail(copy.swap.networkUnknown);
+        return;
+      }
+      // Re-bound under non-null names for the same reason `confirmedOrder` and
+      // friends are below: TypeScript does not carry a guard's narrowing across
+      // the `proceedWithConfirmedSwap` function boundary.
+      const confirmPayToken: SwapToken = payToken;
+      const confirmReceiveToken: SwapToken = receiveToken;
+      // Synchronous epoch check before any step-up / sign work.
+      if (!confirmValidRef.current) {
+        showFail('Quote changed since review. Go back and quote again.');
+        return;
+      }
+      const appliedQuote = quoteAppliedAtRef.current;
+      // Measure at Confirm, per B3-D2. Emission is deferred to submitSwap's first
+      // safety assertion so rejected pre-sign attempts do not enter the denominator.
+      // Timing metadata is analytics-only: if it is absent or stale, skip the
+      // signal without changing the pre-existing Confirm path.
+      const quoteAgeEventAtConfirm =
+        appliedQuote?.requestId === order.requestId
+          ? quoteAgeAtSigningEvent({
+              quoteAppliedAtMs: appliedQuote.atMs,
+              nowMs: Date.now(),
+            })
+          : null;
+      // Wait for the mount load if it is still in flight, so a fast confirm is
+      // not refused on the pre-load `false` below.
+      //
+      // ⚠️ This await is safe *only* because what follows reads a ref, not state.
+      // `readJurisdictionGateInputs` exists precisely because awaiting here and
+      // then reading React state was the fail-open — the closure never refreshes.
+      // `disclosuresReadyRef.current` is a fresh read, so it sees the load's
+      // value. Neither branch of the load rejects (`loadJurisdictionGateInputs`
+      // and `resolveDisclosures` both swallow their own failures), so this await
+      // cannot throw past the guards below.
+      if (configLoadRef.current) {
+        await configLoadRef.current;
+      }
 
-    const confirmedOrder = order;
-    const confirmedSession = session;
-    const confirmedQuoteDigest = quoteDigest;
-    const confirmedFrozenIntent = frozenIntent;
-    async function proceedWithConfirmedSwap() {
-      const order = confirmedOrder;
-      const session = confirmedSession;
-      const quoteDigest = confirmedQuoteDigest;
-      const frozenIntent = confirmedFrozenIntent;
-      confirmationPendingRef.current = true;
-      setBusy(true);
-      setFormError(null);
-      swapStartedAt.current = Date.now();
-      trackEvent('swap_confirmed', { quote_id: frozenIntent.requestId });
-      let signerClear: (() => void) | undefined;
-      try {
-        const currentRequest = {
-          inputMint: confirmPayToken.mint,
-          outputMint: confirmReceiveToken.mint,
-          amount: form.ok ? form.atomicIn : '',
-        };
-        // Confirm executes only from a frozen validated clone (recomputed digest),
-        // bound to the current quote generation + exact current request.
-        const confirmArgs = {
-          frozen: frozenIntent,
-          order,
-          quoteDigest,
-          paySymbol: confirmPayToken.symbol,
-          receiveSymbol: confirmReceiveToken.symbol,
-          generation: readyQuoteGenerationRef.current,
-          gate: quoteGateRef.current,
-          request: currentRequest,
-          confirmValid: confirmValidRef,
-        };
-        const liveConfirmArgs = () => {
-          const liveCluster = clusterRef.current;
-          if (!liveCluster) {
+      // Everything past the refusals retains the existing busy
+      // sequencing, the step-up, the signer, submitSwap, and the whole
+      // try/catch/finally, with admission owned by the outer callback. The gate holds it
+      // as an injected hand-off and a test can prove a refused swap never
+      // reaches it.
+      //
+      // Declared inside onConfirmSwap so it sees the same bindings the inline
+      // version did.
+      //
+      // ⚠️ TypeScript does not carry the guard's non-null narrowing across a
+      // function boundary, so the four guarded values are re-bound under their own
+      // names on the first four lines. Same values, read at the same moment the
+      // guard read them — this restores the types the inline code already had and
+      // preserves the guarded values across the function boundary.
+      const confirmedOrder = order;
+      const confirmedSession = session;
+      const confirmedQuoteDigest = quoteDigest;
+      const confirmedFrozenIntent = frozenIntent;
+      async function proceedWithConfirmedSwap() {
+        const order = confirmedOrder;
+        const session = confirmedSession;
+        const quoteDigest = confirmedQuoteDigest;
+        const frozenIntent = confirmedFrozenIntent;
+        setBusy(true);
+        setFormError(null);
+        swapStartedAt.current = Date.now();
+        trackEvent('swap_confirmed', { quote_id: frozenIntent.requestId });
+        let signerClear: (() => void) | undefined;
+        try {
+          const currentRequest = {
+            inputMint: confirmPayToken.mint,
+            outputMint: confirmReceiveToken.mint,
+            amount: form.ok ? form.atomicIn : '',
+          };
+          // Confirm executes only from a frozen validated clone (recomputed digest),
+          // bound to the current quote generation + exact current request.
+          const confirmArgs = {
+            frozen: frozenIntent,
+            order,
+            quoteDigest,
+            paySymbol: confirmPayToken.symbol,
+            receiveSymbol: confirmReceiveToken.symbol,
+            generation: readyQuoteGenerationRef.current,
+            gate: quoteGateRef.current,
+            request: currentRequest,
+            confirmValid: confirmValidRef,
+          };
+          const liveConfirmArgs = () => {
+            const liveCluster = clusterRef.current;
+            if (!liveCluster) {
+              throw new SwapApiError(
+                'swap_quote_mismatch',
+                copy.swap.networkUnknown,
+              );
+            }
+            return {
+              ...confirmArgs,
+              outputTokenFacts: signingOutputTokenFactsRef.current,
+              inputTokenFacts: signingInputTokenFactsRef.current,
+              cluster: liveCluster,
+            };
+          };
+          let executeOrder = assertConfirmMatchesFrozenIntent(liveConfirmArgs());
+          if (!confirmValidRef.current) {
             throw new SwapApiError(
               'swap_quote_mismatch',
-              copy.swap.networkUnknown,
+              'Quote changed since review. Go back and quote again.',
             );
           }
-          return {
-            ...confirmArgs,
-            outputTokenFacts: signingOutputTokenFactsRef.current,
-            inputTokenFacts: signingInputTokenFactsRef.current,
-            cluster: liveCluster,
-          };
-        };
-        let executeOrder = assertConfirmMatchesFrozenIntent(liveConfirmArgs());
-        if (!confirmValidRef.current) {
-          throw new SwapApiError(
-            'swap_quote_mismatch',
-            'Quote changed since review. Go back and quote again.',
-          );
-        }
-        const notionalSol = (() => {
-          try {
-            if (executeOrder.inputMint === SOL_MINT) {
-              return Number(BigInt(executeOrder.inAmount)) / 1e9;
+          const notionalSol = (() => {
+            try {
+              if (executeOrder.inputMint === SOL_MINT) {
+                return Number(BigInt(executeOrder.inAmount)) / 1e9;
+              }
+              if (executeOrder.outputMint === SOL_MINT) {
+                return Number(BigInt(executeOrder.outAmount)) / 1e9;
+              }
+              return null;
+            } catch {
+              return null;
             }
-            if (executeOrder.outputMint === SOL_MINT) {
-              return Number(BigInt(executeOrder.outAmount)) / 1e9;
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })();
-        const prepared = await stepUp.prepareStepUp({
-          session,
-          notionalSol,
-          surface: 'swap',
-        });
-        // Reassert full frozen generation/request after async prepare.
-        executeOrder = reassertFrozenConfirmAuthority({
-          ...liveConfirmArgs(),
-          generation: readyQuoteGenerationRef.current,
-        });
-        const assertConfirmAuthorityLive = () => {
+          })();
+          const prepared = await stepUp.prepareStepUp({
+            session,
+            notionalSol,
+            surface: 'swap',
+          });
+          // Reassert full frozen generation/request after async prepare.
           executeOrder = reassertFrozenConfirmAuthority({
             ...liveConfirmArgs(),
             generation: readyQuoteGenerationRef.current,
           });
-        };
-        // Step-up context is mandatory at signer creation (never an ungated money signer).
-        // Frozen confirm authority is checked before materialization and after awaits.
-        const signer = await getActiveSigner({
-          session,
-          notionalSol,
-          surface: 'swap',
-          verifyPrivyMfa:
-            prepared.needed && 'verifyPrivyMfa' in prepared
-              ? prepared.verifyPrivyMfa
+          const assertConfirmAuthorityLive = () => {
+            executeOrder = reassertFrozenConfirmAuthority({
+              ...liveConfirmArgs(),
+              generation: readyQuoteGenerationRef.current,
+            });
+          };
+          // Step-up context is mandatory at signer creation (never an ungated money signer).
+          // Frozen confirm authority is checked before materialization and after awaits.
+          const signer = await getActiveSigner({
+            session,
+            notionalSol,
+            surface: 'swap',
+            verifyPrivyMfa:
+              prepared.needed && 'verifyPrivyMfa' in prepared
+                ? prepared.verifyPrivyMfa
+                : undefined,
+            policy: prepared.policy ?? stepUp.policy ?? undefined,
+            assertConfirmAuthorityLive,
+          });
+          signerClear = signer.clear;
+          // Acceptance is complete. Morph Review into Sending while the network lands.
+          setStep('sending');
+          setSheetDismissed(false);
+          // Reassert full frozen authority immediately before submit.
+          assertConfirmAuthorityLive();
+          const result = await submitSwap({
+            signer,
+            order: executeOrder,
+            session,
+            quoteDigest: frozenIntent.quoteDigest,
+            reviewedOutputTokenFacts: frozenIntent.reviewedOutputTokenFacts,
+            reviewedInputTokenFacts: frozenIntent.reviewedInputTokenFacts,
+            // Same live read, and the same refusal on `null`: `liveConfirmArgs`
+            // has already thrown by here if the ref went empty.
+            cluster: liveConfirmArgs().cluster,
+            verifyPrivyMfa:
+              prepared.needed && 'verifyPrivyMfa' in prepared
+                ? prepared.verifyPrivyMfa
+                : undefined,
+            cells: moneySignerGateCells,
+            // Propagate through submitSwap await boundaries (RPC/lookup/sign).
+            assertConfirmAuthorityLive,
+            onBeforeSafetyAssertion: quoteAgeEventAtConfirm
+              ? () => {
+                  trackEvent(
+                    quoteAgeEventAtConfirm.name,
+                    quoteAgeEventAtConfirm.properties,
+                  );
+                }
               : undefined,
-          policy: prepared.policy ?? stepUp.policy ?? undefined,
-          assertConfirmAuthorityLive,
-        });
-        signerClear = signer.clear;
-        // Acceptance is complete. Morph Review into Sending while the network lands.
-        setStep('sending');
-        confirmationPendingRef.current = false;
-        setSheetDismissed(false);
-        // Reassert full frozen authority immediately before submit.
-        assertConfirmAuthorityLive();
-        const result = await submitSwap({
-          signer,
-          order: executeOrder,
-          session,
-          quoteDigest: frozenIntent.quoteDigest,
-          reviewedOutputTokenFacts: frozenIntent.reviewedOutputTokenFacts,
-          reviewedInputTokenFacts: frozenIntent.reviewedInputTokenFacts,
-          // Same live read, and the same refusal on `null`: `liveConfirmArgs`
-          // has already thrown by here if the ref went empty.
-          cluster: liveConfirmArgs().cluster,
-          verifyPrivyMfa:
-            prepared.needed && 'verifyPrivyMfa' in prepared
-              ? prepared.verifyPrivyMfa
-              : undefined,
-          cells: moneySignerGateCells,
-          // Propagate through submitSwap await boundaries (RPC/lookup/sign).
-          assertConfirmAuthorityLive,
-          onBeforeSafetyAssertion: quoteAgeEventAtConfirm
-            ? () => {
-                trackEvent(
-                  quoteAgeEventAtConfirm.name,
-                  quoteAgeEventAtConfirm.properties,
-                );
-              }
-            : undefined,
-        });
-        // #7: submitSwap only resolves after independent RPC confirmation.
-        // Refuse success UI / swap_succeeded without on-chain confirmationStatus.
-        if (
-          result.confirmationStatus !== 'confirmed' &&
-          result.confirmationStatus !== 'finalized'
-        ) {
-          throw new Error(
-            'Swap was submitted but not confirmed on-chain yet. Check Activity before retrying.',
-          );
-        }
-        if (routineFireForLifetime) {
-          try {
-            const approvingStepUpSessionId = getActiveStepUpSessionKey();
-            if (
-              routinesEnabledRef.current &&
-              approvingStepUpSessionId &&
-              confirmedSwapMatchesRoutineFire(routineFireForLifetime, {
-                walletAddress: session.address,
-                inputMint: executeOrder.inputMint,
-              })
-            ) {
-              await recordRoutineFire({
-                enabled: true,
-                routineId: routineFireForLifetime.routineId,
-                walletAddress: session.address,
-                approvingStepUpSessionId,
-                executedSwapSignature: result.signature,
-                currentWalletAddress: () =>
-                  liveSessionCell.current?.address ?? null,
-                // Reuse the already-acquired signer from the signed swap. No
-                // key, transaction or signature is persisted between calls.
-                signMessage: (message) => signer.signMessage(message),
-              });
-            }
-          } catch {
-            // The swap is already confirmed. Never relabel it failed or invite
-            // a duplicate; report only the routine bookkeeping gap.
-            setRoutineRecordError(
-              "Swap confirmed. Routine status couldn't be updated.",
+          });
+          // #7: submitSwap only resolves after independent RPC confirmation.
+          // Refuse success UI / swap_succeeded without on-chain confirmationStatus.
+          if (
+            result.confirmationStatus !== 'confirmed' &&
+            result.confirmationStatus !== 'finalized'
+          ) {
+            throw new Error(
+              'Swap was submitted but not confirmed on-chain yet. Check Activity before retrying.',
             );
+          }
+          if (routineFireForLifetime) {
+            try {
+              const approvingStepUpSessionId = getActiveStepUpSessionKey();
+              if (
+                routinesEnabledRef.current &&
+                approvingStepUpSessionId &&
+                confirmedSwapMatchesRoutineFire(routineFireForLifetime, {
+                  walletAddress: session.address,
+                  inputMint: executeOrder.inputMint,
+                })
+              ) {
+                await recordRoutineFire({
+                  enabled: true,
+                  routineId: routineFireForLifetime.routineId,
+                  walletAddress: session.address,
+                  approvingStepUpSessionId,
+                  executedSwapSignature: result.signature,
+                  currentWalletAddress: () =>
+                    liveSessionCell.current?.address ?? null,
+                  // Reuse the already-acquired signer from the signed swap. No
+                  // key, transaction or signature is persisted between calls.
+                  signMessage: (message) => signer.signMessage(message),
+                });
+              }
+            } catch {
+              // The swap is already confirmed. Never relabel it failed or invite
+              // a duplicate; report only the routine bookkeeping gap.
+              setRoutineRecordError(
+                "Swap confirmed. Routine status couldn't be updated.",
+              );
+            } finally {
+              clearRoutineFireForSwap();
+            }
+          }
+          trackEvent('swap_signed', { quote_id: executeOrder.requestId });
+          trackEvent('swap_submitted', { signature: result.signature });
+          setSignature(result.signature);
+          setSheetDismissed(false);
+          setStep('success');
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          // The Home card that opened this Review now reads `Signed`.
+          // After the person's acceptance and the confirmed submit, never before.
+          if (routeParams.askLiveCard) {
+            markLiveCardSignedInStore(routeParams.askLiveCard, {
+              payText: formatGroupedDisplayAmount(
+                formatAtomicAmount(frozenIntent.inAmount, confirmPayToken.decimals),
+              ),
+              receiveText: formatGroupedDisplayAmount(
+                formatAtomicAmount(frozenIntent.outAmount, confirmReceiveToken.decimals),
+              ),
+              receiveSymbol: frozenIntent.receiveSymbol,
+            });
+          }
+          trackEvent('swap_succeeded', {
+            signature: result.signature,
+            confirmation_status: result.confirmationStatus,
+            in_amount: executeOrder.inAmount,
+            out_amount: executeOrder.outAmount,
+            fee_bps: executeOrder.corsoFeeBps,
+            duration_ms: swapStartedAt.current
+              ? Date.now() - swapStartedAt.current
+              : undefined,
+          });
+          try {
+            void saveConfirmedReceipt(result, receiptCaptureRef.current).catch(() => {
+              warnReceiptSnapshotFailure();
+            });
+          } catch {
+            warnReceiptSnapshotFailure();
+          }
+        } catch (error) {
+          // Landing was submitted but unproven. Corso must NOT call this a failure:
+          // a user told "failed" who re-swaps has paid twice. Show the signature so
+          // they can check, and record it as unconfirmed, not failed.
+          if (error instanceof SwapLandUncertainError) {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setFormError(
+              error.signature
+                ? copy.swap.unconfirmedSignature(error.message, error.signature)
+                : error.message,
+            );
+            trackEvent('swap_submit_unconfirmed', {
+              stage: 'confirm',
+              error_code: error.code,
+            });
+            return;
+          }
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          showFail(
+            error instanceof Error ? error.message : copy.swap.errorGeneric,
+          );
+          trackEvent('swap_failed', {
+            stage: 'confirm',
+            error_code:
+              error instanceof SwapApiError
+                ? error.code
+                : error instanceof Error
+                  ? 'execute_or_confirm_failed'
+                  : 'unknown',
+          });
+          reportHandledFailure(error, {
+            feature: 'swap',
+            stage: 'confirm',
+            code: classifySwapFailure(error),
+          });
+        } finally {
+          try {
+            signerClear?.();
           } finally {
-            clearRoutineFireForSwap();
+            setBusy(false);
           }
         }
-        trackEvent('swap_signed', { quote_id: executeOrder.requestId });
-        trackEvent('swap_submitted', { signature: result.signature });
-        setSignature(result.signature);
-        setSheetDismissed(false);
-        setStep('success');
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // The Home card that opened this Review now reads `Signed`.
-        // After the person's acceptance and the confirmed submit, never before.
-        if (routeParams.askLiveCard) {
-          markLiveCardSignedInStore(routeParams.askLiveCard, {
-            payText: formatGroupedDisplayAmount(
-              formatAtomicAmount(frozenIntent.inAmount, confirmPayToken.decimals),
-            ),
-            receiveText: formatGroupedDisplayAmount(
-              formatAtomicAmount(frozenIntent.outAmount, confirmReceiveToken.decimals),
-            ),
-            receiveSymbol: frozenIntent.receiveSymbol,
-          });
-        }
-        trackEvent('swap_succeeded', {
-          signature: result.signature,
-          confirmation_status: result.confirmationStatus,
-          in_amount: executeOrder.inAmount,
-          out_amount: executeOrder.outAmount,
-          fee_bps: executeOrder.corsoFeeBps,
-          duration_ms: swapStartedAt.current
-            ? Date.now() - swapStartedAt.current
-            : undefined,
-        });
-        try {
-          void saveConfirmedReceipt(result, receiptCaptureRef.current).catch(() => {
-            warnReceiptSnapshotFailure();
-          });
-        } catch {
-          warnReceiptSnapshotFailure();
-        }
-      } catch (error) {
-        // Landing was submitted but unproven. Corso must NOT call this a failure:
-        // a user told "failed" who re-swaps has paid twice. Show the signature so
-        // they can check, and record it as unconfirmed, not failed.
-        if (error instanceof SwapLandUncertainError) {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          setFormError(
-            error.signature
-              ? copy.swap.unconfirmedSignature(error.message, error.signature)
-              : error.message,
-          );
-          trackEvent('swap_submit_unconfirmed', {
-            stage: 'confirm',
-            error_code: error.code,
-          });
-          return;
-        }
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        showFail(
-          error instanceof Error ? error.message : copy.swap.errorGeneric,
-        );
-        trackEvent('swap_failed', {
-          stage: 'confirm',
-          error_code:
-            error instanceof SwapApiError
-              ? error.code
-              : error instanceof Error
-                ? 'execute_or_confirm_failed'
-                : 'unknown',
-        });
-        reportHandledFailure(error, {
-          feature: 'swap',
-          stage: 'confirm',
-          code: classifySwapFailure(error),
-        });
-      } finally {
-        signerClear?.();
-        confirmationPendingRef.current = false;
-        setBusy(false);
       }
-    }
 
-    const gated = await runGatedSwapConfirm({
-      disclosuresReady: disclosuresReadyRef.current,
-      readGateInputs: () =>
-        readJurisdictionGateInputs({
-          settled: gateInputsRef.current,
-          inFlight: configLoadRef.current,
-          load: loadJurisdictionGateInputs,
-        }),
-      asset: {
-        mint: frozenIntent.outputMint,
-        symbol: frozenIntent.receiveSymbol,
-        // `name` lives on the Jupiter slice and only when that slice resolved.
-        // Reading it unguarded is what typecheck caught.
-        name:
-          receiveTokenFacts.facts?.sources.jupiter.status === 'ok'
-            ? receiveTokenFacts.facts.sources.jupiter.fields.name
-            : null,
-      },
-      dispose: {
-        mint: frozenIntent.inputMint,
-        symbol: frozenIntent.paySymbol,
-        name:
-          payTokenFacts.facts?.sources.jupiter.status === 'ok'
-            ? payTokenFacts.facts.sources.jupiter.fields.name
-            : null,
-      },
-      copy: {
-        accessDisclosures: copy.swap.accessDisclosures,
-        accessUnavailable: copy.swap.accessUnavailable,
-        accessJurisdiction: copy.swap.accessJurisdiction,
-        accessAsset: copy.swap.accessAsset,
-      },
-      proceed: proceedWithConfirmedSwap,
-    });
-    if (gated.status === 'refused') {
-      showFail(gated.errorMessage);
-      return;
+      const gated = await runGatedSwapConfirm({
+        disclosuresReady: disclosuresReadyRef.current,
+        readGateInputs: () =>
+          readJurisdictionGateInputs({
+            settled: gateInputsRef.current,
+            inFlight: configLoadRef.current,
+            load: loadJurisdictionGateInputs,
+          }),
+        asset: {
+          mint: frozenIntent.outputMint,
+          symbol: frozenIntent.receiveSymbol,
+          name:
+            receiveTokenFacts.facts?.sources.jupiter.status === 'ok'
+              ? receiveTokenFacts.facts.sources.jupiter.fields.name
+              : null,
+        },
+        dispose: {
+          mint: frozenIntent.inputMint,
+          symbol: frozenIntent.paySymbol,
+          name:
+            payTokenFacts.facts?.sources.jupiter.status === 'ok'
+              ? payTokenFacts.facts.sources.jupiter.fields.name
+              : null,
+        },
+        copy: {
+          accessDisclosures: copy.swap.accessDisclosures,
+          accessUnavailable: copy.swap.accessUnavailable,
+          accessJurisdiction: copy.swap.accessJurisdiction,
+          accessAsset: copy.swap.accessAsset,
+        },
+        proceed: proceedWithConfirmedSwap,
+      });
+      if (gated.status === 'refused') {
+        showFail(gated.errorMessage);
+        return;
+      }
+    } finally {
+      confirmationPendingRef.current = false;
     }
   }
 
@@ -1653,10 +1719,7 @@ export default function SwapScreen() {
       : copy.home.balancePlaceholder;
 
   const composeDisclosureRows = buildComposerDisclosureRows({
-    route:
-      quoteStatus === 'loading' && !order?.router
-        ? '…'
-        : resolveSwapRouteDisplayName(order?.router ?? null),
+    quoteStatus,
     price: priceLabel,
     corsoFee: feeRowValue(
       resolveSwapFeeDisplay(order, feeStatus, cluster),
@@ -1786,11 +1849,12 @@ export default function SwapScreen() {
       : null;
 
   function closeReviewSheet() {
-    if (signPressPendingRef.current || confirmationPendingRef.current) return;
+    // Dismissing Sending hides the sheet without releasing confirmation ownership.
     if (step === 'sending') {
       setSheetDismissed(true);
       return;
     }
+    if (signPressPendingRef.current || confirmationPendingRef.current) return;
     if (step === 'success') {
       router.replace('/(app)');
       return;
@@ -1963,7 +2027,8 @@ export default function SwapScreen() {
         visible={pickerTarget != null}
         tokens={pickerTokens}
         selectedMint={activePickerMint}
-        allowSearch={pickerTarget != null}
+        book={pickerTarget != null ? curated.book : null}
+        bookState={curated.state}
         acquireRows={pickerTarget === 'receive'}
         onSelect={onPickToken}
         onClose={() => setPickerTarget(null)}

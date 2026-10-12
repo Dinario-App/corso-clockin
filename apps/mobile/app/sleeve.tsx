@@ -3,6 +3,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { usePrivy } from '@privy-io/expo';
 import { useFiatTotal } from '@/src/features/balances/useFiatTotal';
 import { presentSleeve } from '@/src/features/sleeve/sleevePresentation';
+import { useReadFailState } from '@/src/features/connectivity/useConnectivity';
 import { maskSleeve, maskSleeveCap } from '@/src/features/balances/hideBalances';
 import { useHideBalances } from '@/src/features/balances/hideBalancesPreference';
 import {
@@ -19,6 +20,7 @@ import {
   resolveSleeveSell,
 } from '@/src/features/sleeve/sleeveSell';
 import { SwapTokenPickerSheet } from '@/src/features/tokenFacts/SwapTokenPickerSheet';
+import { useCuratedBook } from '@/src/features/universe/useCuratedBook';
 import { useTokenFacts } from '@/src/features/tokenFacts/useTokenFacts';
 import { goBackOr } from '@/src/features/navigation/goBackOr';
 import { BACK_FALLBACK } from '@/src/features/navigation/guardedBack';
@@ -35,6 +37,7 @@ export default function SleeveScreen() {
   const fiat = useFiatTotal(session?.address, { session, getAccessToken });
   const [swapEnabled, setSwapEnabled] = useState<boolean | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const curated = useCuratedBook(searchOpen);
   const [pendingSell, setPendingSell] = useState<string | null>(null);
   const [sellMessage, setSellMessage] = useState<string | null>(null);
   const [capRead, setCapRead] = useState<SleeveCapRead>({ kind: 'unknown' });
@@ -63,7 +66,8 @@ export default function SleeveScreen() {
     }, [refresh, session?.type, getAccessToken]),
   );
 
-  const model = presentSleeve(fiat, Date.now(), {
+  const failState = useReadFailState();
+  const model = presentSleeve({ ...fiat, failState }, Date.now(), {
     swapsOff: swapEnabled === false,
   });
   const cap = presentSleeveCap(fiat, capRead, previewStep);
@@ -148,7 +152,8 @@ export default function SleeveScreen() {
         visible={searchOpen}
         tokens={[]}
         selectedMint=""
-        allowSearch
+        bookState={curated.state}
+        book={curated.book}
         acquireRows
         onSelect={(token) => {
           setSearchOpen(false);

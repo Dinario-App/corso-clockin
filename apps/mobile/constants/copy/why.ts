@@ -12,7 +12,7 @@ export type WhyFormat = {
   ratio: (value: string) => string;
 };
 
-export const WHY_TEMPLATE_VERSION = 1;
+export const WHY_TEMPLATE_VERSION = 2;
 
 export const whyCopyV1 = {
   title: "What we're seeing",
@@ -76,7 +76,7 @@ export const whyCopyV1 = {
     plan_all_near_month_average: (p: { maxOffsetPct: string }, f: WhyFormat) =>
       `Every asset within ${f.share(p.maxOffsetPct)} of its monthly average`,
   },
-  /** The small grey basis label: `Order flow · 1 day`. */
+  /** The small grey basis label: `Order flow · 1 day` (v2: `Buying vs selling · 1 day`). */
   basis: {
     price: 'Price',
     order_flow: 'Order flow',
@@ -141,5 +141,27 @@ const FILING: Record<WhyFilingForm, string> = {
   fund_holdings_filing: 'A fund holdings filing',
 };
 
+export const whyMoodV2: Record<WhyMood, string> = {
+  extreme_fear: 'very nervous',
+  fear: 'nervous',
+  neutral: 'calm',
+  greed: 'upbeat',
+  extreme_greed: 'very upbeat',
+};
+
+/**
+ * Version 2: version 1 with the two plain-words rows. Every other template is
+ * version 1's own, so a line renders the same words under either version.
+ */
+export const whyCopyV2 = {
+  ...whyCopyV1,
+  lines: {
+    ...whyCopyV1.lines,
+    market_mood: (p: { mood: WhyMood; index: number }, _f: WhyFormat) =>
+      `Crypto mood: ${whyMoodV2[p.mood]} (${p.index} of 100)`,
+  },
+  basis: { ...whyCopyV1.basis, order_flow: 'Buying vs selling' },
+} as const;
+
 /** Every template set by version. A snapshot renders with its own. */
-export const WHY_COPY_BY_VERSION = { 1: whyCopyV1 } as const;
+export const WHY_COPY_BY_VERSION = { 1: whyCopyV1, 2: whyCopyV2 } as const;

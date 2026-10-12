@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Platform,
+  Pressable,
   Share,
   StyleSheet,
   View,
@@ -27,7 +28,9 @@ import {
   resolveReceivePresentation,
 } from '@/src/features/request/receivePresentation';
 import { useCorsoSession } from '@/src/features/session/SessionContext';
-import { resolveCluster, type PublicAppConfig } from '@/src/lib/apiConfig';
+import { useConnectivity } from '@/src/features/connectivity/useConnectivity';
+import { usePortfolioName } from '@/src/features/profile/usePortfolioName';
+import { resolveNetworkStatus, type NetworkStatus } from '@/src/lib/apiConfig';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { SettingsCard } from '@/src/ui/cards/SettingsCard';
 import { canonNumerals } from '@/src/ui/cards/canonType';
@@ -41,22 +44,40 @@ const COPY_FLASH_MS = 1600;
 
 export default function ReceiveScreen() {
   const { session } = useCorsoSession();
-  const [cluster, setCluster] = useState<PublicAppConfig['cluster'] | null>(
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(
     null,
   );
+  const portfolioName = usePortfolioName();
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    void resolveCluster()
-      .then((resolved) => {
-        if (!cancelled) setCluster(resolved);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
+  const mounted = useRef(true);
+  const reading = useRef(false);
+  const readNetwork = useCallback(async () => {
+    if (reading.current) return;
+    reading.current = true;
+    try {
+      const resolved = await resolveNetworkStatus();
+      if (mounted.current) setNetworkStatus(resolved);
+    } catch {
+      // Folded into `unknown` upstream; a throw keeps the last answer.
+    } finally {
+      reading.current = false;
+    }
   }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    void readNetwork();
+    return () => {
+      mounted.current = false;
+    };
+  }, [readNetwork]);
+
+  const connectivity = useConnectivity();
+  const unknownNow = networkStatus?.state === 'unknown';
+  useEffect(() => {
+    if (connectivity === 'online' && unknownNow) void readNetwork();
+  }, [connectivity, unknownNow, readNetwork]);
 
   useEffect(() => {
     if (!copied) return;
@@ -66,7 +87,9 @@ export default function ReceiveScreen() {
 
   const receive = resolveReceivePresentation({
     address: session?.address,
-    cluster,
+    cluster: networkStatus?.state === 'known' ? networkStatus.cluster : null,
+    networkUnknown: networkStatus?.state === 'unknown',
+    portfolioName,
   });
 
   async function onCopy() {
@@ -127,9 +150,13 @@ export default function ReceiveScreen() {
                   />
                 </View>
                 <View style={styles.qrId}>
-                  <CorsoText style={styles.qrName} numberOfLines={1}>
-                    {receive.accountName}
-                  </CorsoText>
+                  {receive.accountName === null ? (
+                    <View style={styles.qrNamePending} />
+                  ) : (
+                    <CorsoText style={styles.qrName} numberOfLines={1}>
+                      {receive.accountName}
+                    </CorsoText>
+                  )}
                   <CorsoText
                     style={[styles.qrAddress, MONO]}
                     numberOfLines={1}
@@ -178,6 +205,29 @@ export default function ReceiveScreen() {
                   {copy.account.receiveCaution}
                 </CorsoText>
               </View>
+
+              {receive.networkUnknown ? (
+                <Pressable
+                  style={styles.note}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void readNetwork();
+                  }}
+                  testID="receive-network-unknown"
+                >
+                  <CorsoIcon
+                    name="discover"
+                    size={13}
+                    color={ethena.ink.tertiary}
+                  />
+                  <CorsoText style={styles.noteText}>
+                    {receive.networkUnknownLabel}
+                  </CorsoText>
+                  <CorsoText style={styles.noteAction}>
+                    {receive.networkRetryLabel}
+                  </CorsoText>
+                </Pressable>
+              ) : null}
             </>
           ) : (
             <CorsoText style={styles.noteText}>
@@ -219,6 +269,8 @@ const styles = StyleSheet.create({
     ...ETHENA_TYPE.keyValueTotal,
     color: ethena.ink.primary,
   },
+  qrNamePending: { height: ETHENA_TYPE.keyValueTotal.lineHeight },
+  /** `.qr-id .ad{font-size:12px;color:var(--ink48);font-weight:500}` */
   qrAddress: {
     ...ETHENA_TYPE.rowSub,
     color: ethena.ink.tertiary,
@@ -237,5 +289,10 @@ const styles = StyleSheet.create({
     flex: 1,
     ...ETHENA_TYPE.rowSub,
     color: ethena.ink.tertiary,
+  },
+  /** The retry word on the unknown-network note: same step, primary ink. */
+  noteAction: {
+    ...ETHENA_TYPE.rowSub,
+    color: ethena.ink.primary,
   },
 });

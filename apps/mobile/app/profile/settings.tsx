@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { goBackOr } from '@/src/features/navigation/goBackOr';
@@ -29,6 +29,15 @@ import {
   setAnalyticsOptedOut,
 } from '@/src/lib/analytics';
 import { useAccessibilityPreference } from '@/src/motion/useAccessibilityPreference';
+import {
+  defaultConsentDecision,
+  recordDefaultDecision,
+  subscribeAiConsent,
+} from '@/src/features/aiConsent/aiConsentStore';
+import {
+  decisionForSwitch,
+  revokeWarningNeeded,
+} from '@/src/features/aiConsent/ui/defaultAssistantRow';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { SettingsCard } from '@/src/ui/cards/SettingsCard';
 import { canonWeight } from '@/src/ui/cards/canonType';
@@ -56,6 +65,12 @@ export default function SettingsDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [analyticsOn, setAnalyticsOn] = useState(true);
   const [analyticsReady, setAnalyticsReady] = useState(false);
+  const assistantDecision = useSyncExternalStore(
+    subscribeAiConsent,
+    defaultConsentDecision,
+    defaultConsentDecision,
+  );
+  const [revokeNotSaved, setRevokeNotSaved] = useState(false);
   // Only shown after a mailto attempt actually fails — never pre-emptively.
   const [supportFallback, setSupportFallback] = useState(false);
   const [supportToast, setSupportToast] = useState<string | null>(null);
@@ -92,6 +107,23 @@ export default function SettingsDetailScreen() {
       cancelled = true;
     };
   }, []);
+
+  async function changeAssistant(nextEnabled: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const written = await recordDefaultDecision(
+        decisionForSwitch(nextEnabled),
+      );
+      setRevokeNotSaved(revokeWarningNeeded(written));
+      void Haptics.selectionAsync();
+    } catch {
+      setError(copy.profile.errorSetting);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   /**
    * The switch reads "share usage analytics", the store reads "opted out", so
@@ -171,6 +203,7 @@ export default function SettingsDetailScreen() {
     reduceMotion,
     analyticsOn,
     analyticsReady,
+    assistantDecision,
   });
 
   return (
@@ -204,7 +237,7 @@ export default function SettingsDetailScreen() {
                   {section.rows.map((row, index) => {
                     const last = index === section.rows.length - 1;
                     if (row.kind === 'switch') {
-                      // Two switches now, and they drive different stores. The
+                      // Three switches now, and they drive different stores. The
                       // row id is what says which — never the position.
                       const isAnalytics = row.id === 'analytics';
                       return (
@@ -221,12 +254,16 @@ export default function SettingsDetailScreen() {
                               void changeAnalytics(value);
                               return;
                             }
+                            if (row.id === 'default-assistant') {
+                              void changeAssistant(value);
+                              return;
+                            }
                             void changeBiometrics(value);
                           }}
                           accessibilityLabel={
                             isAnalytics
                               ? analyticsSwitchAccessibilityLabel(row.checked)
-                              : undefined
+                              : row.accessibilityLabel
                           }
                           accessibilityHint={
                             isAnalytics
@@ -282,6 +319,14 @@ export default function SettingsDetailScreen() {
                     );
                   })}
                 </SettingsCard>
+                {section.id === 'privacy' && revokeNotSaved ? (
+                  <CorsoText
+                    style={styles.assistantWarning}
+                    testID="settings-revoke-not-saved"
+                  >
+                    {copy.aiConsentControl.revokeNotSaved}
+                  </CorsoText>
+                ) : null}
               </View>
             ))}
 
@@ -364,5 +409,12 @@ const styles = StyleSheet.create({
     ...ETHENA_TYPE.rowSub,
     color: ethena.ink.tertiary,
     paddingHorizontal: 4,
+  },
+  /** Primary ink, like Your AI's: a withdrawal that did not stick is news. */
+  assistantWarning: {
+    ...ETHENA_TYPE.rowSub,
+    color: ethena.ink.primary,
+    paddingHorizontal: 4,
+    paddingTop: 8,
   },
 });

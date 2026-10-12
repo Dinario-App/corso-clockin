@@ -1,3 +1,4 @@
+import { formatAlertThresholdUsd } from '@corso/price-format';
 import type { HeadsUpAccessArgs } from '../skills/directory/headsUpAccessClient';
 import { isValidPriceMint } from '../balances/priceSnapshot';
 import { fetchPrices } from '../balances/fetchPrices';
@@ -28,6 +29,7 @@ export type FiredAlert = AlertRule & {
   observedPrice: string;
   firedAtMs: number;
   priceAsOfMs: number;
+  line?: string;
 };
 export type AlertScope = {
   walletAddress: string;
@@ -102,6 +104,35 @@ function isFired(v: unknown, owner: string): v is FiredAlert {
     typeof v.observedPrice === 'string' &&
     normalizeThreshold(v.observedPrice) === v.observedPrice
   );
+}
+// The API's inbox line is the push title, "{Name} is above {PRICE}". A line
+// that is longer, carries another character class, or names a different
+// direction or threshold than its own row is dropped, and the row falls back
+// to alertLine.
+export function boundedInboxLine(
+  raw: unknown,
+  direction: Direction,
+  thresholdPrice: string,
+): string | null {
+  if (typeof raw !== 'string' || raw.length > 64) return null;
+  const m = /^[A-Za-z][A-Za-z0-9]{0,11} is (above|below) (\$[0-9,.]{1,40})$/.exec(
+    raw,
+  );
+  return m &&
+    m[1] === direction &&
+    m[2] === formatAlertThresholdUsd(thresholdPrice)
+    ? raw
+    : null;
+}
+function firedEvents(events: FiredAlert[]): FiredAlert[] {
+  return events.map(({ line, ...event }) => {
+    const bounded = boundedInboxLine(
+      line,
+      event.direction,
+      event.thresholdPrice,
+    );
+    return bounded ? { ...event, line: bounded } : event;
+  });
 }
 export class AlertRequestError extends Error {
   constructor(public code: string) {
@@ -255,7 +286,7 @@ export async function readAlertNotifications(args: HeadsUpAccessArgs) {
     throw Error('alert_invalid_response');
   return {
     alerts: body.alerts as OwnedAlert[],
-    events: body.events as FiredAlert[],
+    events: firedEvents(body.events as FiredAlert[]),
   };
 }
 export async function readAlertInbox(args: HeadsUpAccessArgs) {
@@ -270,7 +301,7 @@ export async function readAlertInbox(args: HeadsUpAccessArgs) {
     !body.events.every((v) => isFired(v, args.walletAddress))
   )
     throw Error('alert_invalid_response');
-  return body.events as FiredAlert[];
+  return firedEvents(body.events as FiredAlert[]);
 }
 export async function removeAlert(args: HeadsUpAccessArgs, alertId: string) {
   const body = await alertRequest(args, {

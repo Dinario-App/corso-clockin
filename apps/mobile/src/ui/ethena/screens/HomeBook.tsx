@@ -1,3 +1,5 @@
+import { usePlainRisk } from '@/src/features/plainRisk/usePlainRisk';
+import { RiskLevelSlot, spokenRiskLevel } from '@/src/ui/risk/RiskLevel';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { copy } from '@/constants/copy';
@@ -24,10 +26,14 @@ import {
 import { TokenIconView } from '@/src/ui/primitives/TokenIconView';
 import { maskedFigureLabel, spokenFigure } from '@/src/ui/format/balanceMask';
 import type {
+  BookName,
   BookRow,
   BookSection,
   BookSectionKey,
   HomeBookModel,
+  WealthDoing,
+  WealthMix,
+  WealthMixStep,
 } from '@/src/ui/ethena/homeBookModel';
 
 /** The manifest ids `ethenaScreens.ts` holds this file to, one per section. */
@@ -35,6 +41,8 @@ const SECTION_TEST_IDS: Readonly<Record<BookSectionKey, string>> = {
   cash: 'ethena-home-tray-cash',
   majors: 'ethena-home-tray-majors',
   sleeve: 'ethena-home-tray-sleeve',
+  gold: 'ethena-home-tray-gold',
+  stocks: 'ethena-home-tray-stocks',
 };
 
 const ADD_CASH_LABEL = 'Add cash';
@@ -48,6 +56,7 @@ export function HomeBook({
   onBuy,
   hideBuy = false,
   today,
+  liveDesk,
   onAsk,
   onSettings,
   onOpenProfile,
@@ -62,6 +71,7 @@ export function HomeBook({
   onBuy?: () => void;
   hideBuy?: boolean;
   today?: ReactNode;
+  liveDesk?: ReactNode;
   onAsk?: () => void;
   onSettings?: () => void;
   onOpenProfile?: () => void;
@@ -171,6 +181,13 @@ export function HomeBook({
         />}
       </View>
 
+      {model.wealth?.doing ? <WealthDoingCard doing={model.wealth.doing} /> : null}
+      {model.wealth?.mix ? <WealthMixCard mix={model.wealth.mix} /> : null}
+
+      {model.newBookLine && liveDesk ? (
+        <View style={{ marginBottom: 14 }}>{liveDesk}</View>
+      ) : null}
+
       {model.newBookLine ? (
         <NewBookCard line={model.newBookLine} onAddCash={onAddCash} />
       ) : null}
@@ -254,7 +271,7 @@ function BookHeroView({ model }: { model: HomeBookModel }) {
         amount={hero.amount}
         amountAccessibilityLabel={maskedFigureLabel(hero.amount)}
         cents={hero.cents ?? undefined}
-        deltaDirection={hero.delta?.direction}
+        deltaDirection={hero.delta?.direction ?? undefined}
         deltaValue={hero.delta?.value}
         deltaSuffix={hero.delta?.suffix}
       />
@@ -263,7 +280,10 @@ function BookHeroView({ model }: { model: HomeBookModel }) {
           testID="home-book-hero-note"
           style={{
             ...ETHENA_TYPE.sub,
-            color: ethena.ink.tertiary,
+            color:
+              hero.noteTone === 'stale'
+                ? ethena.ink.secondary
+                : ethena.ink.tertiary,
             textAlign: 'center',
             marginTop: 6,
             paddingHorizontal: ethenaGeometry.gutter,
@@ -272,28 +292,168 @@ function BookHeroView({ model }: { model: HomeBookModel }) {
           {hero.note}
         </CorsoText>
       ) : null}
-      <CorsoText
-        testID="home-book-venue"
-        style={{
-          ...ETHENA_TYPE.rowSub,
-          color: ethena.ink.tertiary,
-          textAlign: 'center',
-          marginTop: 4,
-          paddingHorizontal: ethenaGeometry.gutter,
-        }}
-      >
-        {copy.homeBook.venue}
-      </CorsoText>
+      {model.newBookLine ? (
+        <CorsoText
+          testID="home-book-venue"
+          style={{
+            ...ETHENA_TYPE.rowSub,
+            color: ethena.ink.tertiary,
+            textAlign: 'center',
+            marginTop: 4,
+            paddingHorizontal: ethenaGeometry.gutter,
+          }}
+        >
+          {copy.homeBook.zeroLine}
+        </CorsoText>
+      ) : null}
     </View>
   );
 }
 
-/**
- * The one card a new book draws in place of the Cash and Everything else
- * trays: the new-book line and the Add cash door, the same door as the verb
- * row's. Existing words only (`copy.homeBook.newBook`, `ADD_CASH_LABEL`).
- * No figure, so Hide balances has nothing here to mask.
- */
+function WealthDoingCard({ doing }: { doing: WealthDoing }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <EthenaTray
+        testID="ethena-home-tray-doing"
+        style={{ marginHorizontal: ethenaGeometry.gutter, paddingVertical: 14 }}
+      >
+        <CorsoText
+          accessibilityRole="header"
+          style={{ ...ETHENA_TYPE.cardHeading, color: ethena.ink.primary }}
+        >
+          {doing.title}
+        </CorsoText>
+        {doing.rows.map((row) => (
+          <View
+            key={row.key}
+            testID={`home-book-doing-${row.key}`}
+            accessible
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              columnGap: 12,
+              marginTop: 8,
+            }}
+          >
+            <CorsoText
+              style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.secondary }}
+            >
+              {row.label}
+            </CorsoText>
+            <CorsoText
+              style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.primary }}
+            >
+              {row.value}
+            </CorsoText>
+          </View>
+        ))}
+      </EthenaTray>
+    </View>
+  );
+}
+
+const MIX_STEP_INK: Readonly<
+  Record<WealthMixStep, { color: string; opacity: number }>
+> = {
+  0: { color: ethena.ink.primary, opacity: 1 },
+  1: { color: ethena.ink.secondary, opacity: 1 },
+  2: { color: ethena.ink.tertiary, opacity: 1 },
+  3: { color: ethena.ink.tertiary, opacity: 0.5 },
+};
+
+function WealthMixCard({ mix }: { mix: WealthMix }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <EthenaTray
+        testID="ethena-home-tray-mix"
+        style={{ marginHorizontal: ethenaGeometry.gutter, paddingVertical: 14 }}
+      >
+        <CorsoText
+          accessibilityRole="header"
+          style={{ ...ETHENA_TYPE.cardHeading, color: ethena.ink.primary }}
+        >
+          {mix.title}
+        </CorsoText>
+        {mix.kind === 'unavailable' ? (
+          <CorsoText
+            testID="home-book-mix-unavailable"
+            style={{
+              ...ETHENA_TYPE.rowSub,
+              color: ethena.ink.secondary,
+              marginTop: 6,
+            }}
+          >
+            {mix.line}
+          </CorsoText>
+        ) : (
+          <>
+            {mix.segments.length > 0 ? (
+              <View
+                testID="home-book-mix-bar"
+                accessible={false}
+                importantForAccessibility="no-hide-descendants"
+                style={{
+                  flexDirection: 'row',
+                  height: 8,
+                  marginTop: 12,
+                  columnGap: 3,
+                }}
+              >
+                {mix.segments.map((segment) => (
+                  <View
+                    key={segment.key}
+                    testID={`home-book-mix-segment-${segment.key}`}
+                    style={{
+                      flexGrow: segment.percent,
+                      flexBasis: 0,
+                      borderRadius: 4,
+                      backgroundColor: MIX_STEP_INK[segment.step].color,
+                      opacity: MIX_STEP_INK[segment.step].opacity,
+                    }}
+                  />
+                ))}
+              </View>
+            ) : null}
+            <View
+              testID="home-book-mix-legend"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                columnGap: 14,
+                rowGap: 4,
+                marginTop: 10,
+              }}
+            >
+              {mix.legend.map((entry) => (
+                <View
+                  key={entry.key}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      backgroundColor: MIX_STEP_INK[entry.step].color,
+                      opacity: MIX_STEP_INK[entry.step].opacity,
+                    }}
+                  />
+                  <CorsoText
+                    testID={`home-book-mix-legend-${entry.key}`}
+                    style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.secondary }}
+                  >
+                    {entry.text}
+                  </CorsoText>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+      </EthenaTray>
+    </View>
+  );
+}
+
 function NewBookCard({
   line,
   onAddCash,
@@ -310,30 +470,47 @@ function NewBookCard({
           paddingVertical: 6,
         }}
       >
-        <CorsoText
-          testID="home-book-new-line"
+        <View
           style={{
-            ...ETHENA_TYPE.rowSub,
-            color: ethena.ink.secondary,
-            paddingTop: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            columnGap: 12,
+            paddingVertical: 12,
           }}
         >
-          {line}
-        </CorsoText>
-        <Pressable
-          testID="home-book-new-add-cash"
-          accessibilityRole="button"
-          accessibilityLabel={ADD_CASH_LABEL}
-          onPress={onAddCash}
-          hitSlop={8}
-          style={{ alignSelf: 'flex-start', paddingVertical: 12 }}
-        >
-          <CorsoText
-            style={{ ...ETHENA_TYPE.cardAction, color: ethena.ink.primary }}
+          <View style={{ flex: 1 }}>
+            <CorsoText
+              testID="home-book-new-line"
+              style={{ ...ETHENA_TYPE.cardHeading, color: ethena.ink.primary }}
+            >
+              {line}
+            </CorsoText>
+            <CorsoText
+              testID="home-book-new-body"
+              style={{
+                ...ETHENA_TYPE.rowSub,
+                color: ethena.ink.secondary,
+                marginTop: 2,
+              }}
+            >
+              {copy.homeBook.newBookBody}
+            </CorsoText>
+          </View>
+          <Pressable
+            testID="home-book-new-add-cash"
+            accessibilityRole="button"
+            accessibilityLabel={ADD_CASH_LABEL}
+            onPress={onAddCash}
+            hitSlop={8}
+            style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            {ADD_CASH_LABEL}
-          </CorsoText>
-        </Pressable>
+            <CorsoText
+              style={{ ...ETHENA_TYPE.cardAction, color: ethena.ink.primary }}
+            >
+              {ADD_CASH_LABEL}
+            </CorsoText>
+          </Pressable>
+        </View>
       </EthenaTray>
     </View>
   );
@@ -358,7 +535,19 @@ function BookSectionView({
   ) {
     return null;
   }
-  const subtotal = newBook ? undefined : section.subtotal;
+  if (section.status !== undefined) {
+    return (
+      <View testID={testID} style={{ marginBottom: 14 }}>
+        <EthenaSectionHead
+          label={section.label}
+          right={section.status}
+          rightAccessibilityLabel={section.status}
+          separates
+        />
+      </View>
+    );
+  }
+  const subtotal = newBook || section.subtotal === '' ? undefined : section.subtotal;
   const head = (
     <EthenaSectionHead
       label={section.label}
@@ -411,26 +600,108 @@ function BookSectionView({
         )}
         {section.key === 'majors'
           ? section.names?.map((name) => (
-              <View
+              <BookNameView
                 key={name.key}
+                name={name}
                 testID={`${testID}-name-${name.key}`}
-                style={{ paddingVertical: 12 }}
-              >
-                <CorsoText
-                  style={{ ...ETHENA_TYPE.rowName, color: ethena.ink.primary }}
-                >
-                  {name.name}
-                </CorsoText>
-                <CorsoText
-                  style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.tertiary }}
-                >
-                  {name.symbol}
-                </CorsoText>
-              </View>
+                onOpenRow={onOpenRow}
+              />
             ))
           : null}
       </EthenaTray>
     </View>
+  );
+}
+
+function BookNameView({
+  name,
+  testID,
+  onOpenRow,
+}: {
+  name: BookName;
+  testID: string;
+  onOpenRow?: (opens: NonNullable<BookRow['opens']>) => void;
+}) {
+  const risk = usePlainRisk(name.mint);
+  const content = (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+      }}
+    >
+      <TokenIconView
+        symbol={name.symbol}
+        mint={name.mint}
+        size={36}
+        accessibilityLabel={name.name}
+        accessible={false}
+      />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <CorsoText
+          numberOfLines={2}
+          style={{ ...ETHENA_TYPE.rowName, color: ethena.ink.primary }}
+        >
+          {name.name}
+        </CorsoText>
+        <CorsoText
+          style={{ ...ETHENA_TYPE.rowSub, color: ethena.ink.tertiary }}
+        >
+          {name.symbol}
+        </CorsoText>
+      </View>
+      {name.price ? (
+        <View style={{ alignItems: 'flex-end' }}>
+          <CorsoText
+            style={{ ...ETHENA_TYPE.rowValue, color: ethena.ink.primary }}
+          >
+            {name.price}
+          </CorsoText>
+          {name.change ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            >
+              {name.change.direction ? (
+                <EthenaDirection
+                  testID={`${testID}-direction`}
+                  direction={name.change.direction}
+                />
+              ) : null}
+              <CorsoText
+                style={{
+                  ...ETHENA_TYPE.rowDelta,
+                  color: resolveDeltaInk(name.change.direction),
+                }}
+              >
+                {name.change.text}
+              </CorsoText>
+            </View>
+          ) : null}
+          <RiskLevelSlot read={risk} testID={`${testID}-risk`} />
+        </View>
+      ) : (
+        <RiskLevelSlot read={risk} testID={`${testID}-risk`} />
+      )}
+    </View>
+  );
+  if (!onOpenRow) return <View testID={testID}>{content}</View>;
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={[
+        name.name,
+        name.price,
+        spokenRiskLevel(risk),
+      ]
+        .filter((part): part is string => part != null)
+        .join(', ')}
+      onPress={() => onOpenRow({ kind: 'major', mint: name.mint })}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -444,6 +715,7 @@ function BookRowView({
   onOpenRow?: (opens: NonNullable<BookRow['opens']>) => void;
 }) {
   const opens = row.opens;
+  const risk = usePlainRisk(row.mint ?? null);
   const content = (
     <View
       style={{
@@ -517,6 +789,9 @@ function BookRowView({
               </CorsoText>
             </View>
           ) : null}
+          {row.mint ? (
+            <RiskLevelSlot read={risk} testID={`${testID}-risk`} />
+          ) : null}
         </View>
       </View>
     </View>
@@ -526,9 +801,13 @@ function BookRowView({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={
-        row.value ? `${row.name}, ${spokenFigure(row.value)}` : row.name
-      }
+      accessibilityLabel={[
+        row.name,
+        row.value ? spokenFigure(row.value) : null,
+        row.mint ? spokenRiskLevel(risk) : null,
+      ]
+        .filter((part): part is string => part != null)
+        .join(', ')}
       onPress={() => onOpenRow(opens)}
     >
       {content}

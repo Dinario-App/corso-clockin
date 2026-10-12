@@ -65,6 +65,7 @@ export function ReviewSign({
 }) {
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= 1.5;
+  const rowsStacked = fontScale >= 1.25;
   const signing = model.state === 'signing';
   const chips = model.chips ?? [];
   const onAction =
@@ -215,13 +216,13 @@ export function ReviewSign({
               }}
             >
               {model.costs.map((line) => (
-                <ReviewRow key={line.label} {...line} stacked={stacked} />
+                <ReviewRow key={line.label} {...line} stacked={rowsStacked} />
               ))}
               {model.total ? (
-                <ReviewRow {...model.total} total stacked={stacked} />
+                <ReviewRow {...model.total} total stacked={rowsStacked} />
               ) : null}
               {(model.trailingCosts ?? []).map((line) => (
-                <ReviewRow key={line.label} {...line} stacked={stacked} />
+                <ReviewRow key={line.label} {...line} stacked={rowsStacked} />
               ))}
             </EthenaTray>
           ) : null}
@@ -462,15 +463,19 @@ function ReviewRow({
           ...type,
           color: total ? ethena.ink.primary : ethena.ink.secondary,
           flexShrink: 1,
+          maxWidth: stacked ? undefined : '60%',
         }}
       >
         {label}
       </CorsoText>
       <CorsoText
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.4}
         style={{
           ...type,
           color: muted ? ethena.ink.secondary : ethena.ink.primary,
-          flexShrink: 1,
+          ...(stacked ? null : { flexGrow: 1, flexShrink: 1, flexBasis: 0 }),
           textAlign: stacked ? 'left' : 'right',
         }}
       >

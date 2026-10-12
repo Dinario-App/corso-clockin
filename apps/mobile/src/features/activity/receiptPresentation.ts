@@ -131,7 +131,7 @@ export function presentReceipt({
   else if (intent && !chain)
     trade.push({
       label: 'Impact · network',
-      value: `Quoted impact: ${formatSwapReviewPriceImpact(intent.priceImpactPct, intent.side === 'sell' ? 'pay' : 'receive')} · Network: ${intent.networkFeeLamports ? `${formatAtomicAmount(intent.networkFeeLamports, 9)} SOL` : 'Unavailable'}`,
+      value: `Price shift: ${formatSwapReviewPriceImpact(intent.priceImpactPct, intent.side === 'sell' ? 'pay' : 'receive')} · Network fee: ${intent.networkFeeLamports ? `${formatAtomicAmount(intent.networkFeeLamports, 9)} SOL` : 'Unavailable'}`,
     });
   const side = intent?.side;
   const amount = failed
@@ -179,11 +179,11 @@ export function presentReceipt({
             body: hideBalances
               ? maskFiguresInline(snapshot?.bookEffect ?? '')
               : (snapshot?.bookEffect ?? ''),
-            quoteLabel: 'Quote age',
+            quoteLabel: 'Price from',
             quoteValue:
               snapshot?.quoteAgeSeconds == null
                 ? 'Unavailable'
-                : `${snapshot.quoteAgeSeconds}s`,
+                : `${snapshot.quoteAgeSeconds}s ago`,
           }
         : null,
     chain: signature

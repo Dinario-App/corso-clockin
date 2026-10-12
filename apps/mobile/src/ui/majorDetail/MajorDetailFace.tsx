@@ -14,6 +14,7 @@ import {
 } from '@/src/features/balances/majorDetailFace';
 import type { PriceHistoryState } from '@/src/features/prices/usePriceHistory';
 import type { TokenDetailStatGrid } from '@/src/features/tokenDetail/tokenDetailChartPresentation';
+import { MajorDeskReadsSlot } from '@/src/features/tokenDesk/MajorDeskReadsSlot';
 import { MajorWhyLineSlot } from '@/src/features/why/WhyViews';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { ChartReadHeadline } from '@/src/ui/charts/ChartReadHeadline';
@@ -39,6 +40,7 @@ import type { StructureRowFace } from '@/src/ui/charts/StructureRow';
 import { MIN_TAP_TARGET_PT } from '@/src/ui/primitives/tapTargetPresentation';
 import { TokenMark } from '@/src/ui/primitives/TokenMark';
 import { MajorDetailCircle } from './MajorDetailCircle';
+import { WAIT_HEADS_UP_LINE_SHOWN } from '@/src/features/wealth/wealthEnv';
 import {
   FULL,
   HALF,
@@ -51,6 +53,7 @@ export function MajorDetailFace({
   chart,
   onBack,
   onBuy,
+  wait = false,
   onSell,
   sellPortions = [],
   onSellPortion,
@@ -73,6 +76,7 @@ export function MajorDetailFace({
   };
   onBack: () => void;
   onBuy: () => void;
+  wait?: boolean;
   onSell: () => void;
   sellPortions?: readonly {
     pct: 25 | 50 | 100;
@@ -92,6 +96,7 @@ export function MajorDetailFace({
 }) {
   const { width, fontScale } = useWindowDimensions();
   const [explainOpen, setExplainOpen] = useState(false);
+  const [waited, setWaited] = useState(false);
   const [statGrid, setStatGrid] = useState<TokenDetailStatGrid | null>(null);
   const heroSize = resolveHeroFontSize({
     text: model.heroText,
@@ -299,6 +304,7 @@ export function MajorDetailFace({
                         mode="live"
                         mint={chart.mint}
                         face={STRUCTURE_CELL}
+                        hideUnknown
                       />
                     }
                   />
@@ -328,6 +334,7 @@ export function MajorDetailFace({
                 </View>
               </EthenaTray>
             ) : null}
+            <MajorDeskReadsSlot mint={chart.mint} />
             {model.wrapperText ? (
               <CorsoText
                 testID="major-detail-wrapper"
@@ -404,6 +411,32 @@ export function MajorDetailFace({
             ))}
           </View>
         ) : null}
+        {model.buy.shown && wait && waited ? (
+          <View
+            testID="major-detail-wait-note"
+            accessibilityLiveRegion="polite"
+            style={{
+              paddingHorizontal: ethenaGeometry.gutter,
+              paddingBottom: 8,
+              gap: 4,
+            }}
+          >
+            <CorsoText
+              style={{ ...ETHENA_TYPE.sub, color: ethena.ink.secondary }}
+            >
+              {copy.wealthV1.asset.waitNote}
+            </CorsoText>
+            {WAIT_HEADS_UP_LINE_SHOWN ? (
+              <CorsoText
+                testID="major-detail-wait-heads-up"
+                accessibilityState={{ disabled: true }}
+                style={{ ...ETHENA_TYPE.sub, color: ethena.ink.tertiary }}
+              >
+                {copy.wealthV1.asset.waitHeadsUp}
+              </CorsoText>
+            ) : null}
+          </View>
+        ) : null}
         {showFloor ? (
           <View
             style={{
@@ -413,6 +446,16 @@ export function MajorDetailFace({
               paddingBottom: 8,
             }}
           >
+            {model.buy.shown && wait ? (
+              <View style={{ flex: 1 }}>
+                <EthenaPill
+                  testID="major-detail-wait"
+                  label={copy.askSheet.wait}
+                  plane="floatAction"
+                  onPress={() => setWaited(true)}
+                />
+              </View>
+            ) : null}
             {model.buy.shown ? (
               <View style={{ flex: 1 }}>
                 <EthenaPill

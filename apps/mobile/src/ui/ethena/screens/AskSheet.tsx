@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useKeyboardOverlapInset } from '@/src/ui/primitives/useKeyboardOverlapInset';
 import { CorsoText } from '@/src/theme/CorsoText';
+import { tabularNumerals } from '@/src/ui/cards/canonType';
 import { ethena } from '@/constants/theme.ethena';
 import { ethenaGeometry } from '@/constants/theme.ethenaGeometry';
 import { ETHENA_BODY_MARGIN, ETHENA_TYPE } from '@/constants/theme.ethenaType';
@@ -168,6 +169,18 @@ export function AskSheet({
                 />
               ) : null}
 
+              {view.suggestions.length > 0 && view.suggestionsLabel ? (
+                <CorsoText
+                  testID="ethena-ask-suggestions-label"
+                  style={{
+                    ...ETHENA_TYPE.section,
+                    color: ethena.ink.secondary,
+                    marginBottom: 10,
+                  }}
+                >
+                  {view.suggestionsLabel}
+                </CorsoText>
+              ) : null}
               {view.suggestions.length > 0 ? (
                 <View
                   testID="ethena-ask-suggestions"
@@ -447,7 +460,7 @@ function RowView({ row, total = false }: { row: AskCardRow; total?: boolean }) {
         style={{
           ...step,
           color: ethena.ink.primary,
-          fontVariant: ['tabular-nums'],
+          fontVariant: tabularNumerals(),
           textAlign: 'right',
           marginLeft: 'auto',
         }}

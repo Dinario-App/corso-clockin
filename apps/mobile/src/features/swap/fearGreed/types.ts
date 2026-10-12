@@ -1,3 +1,6 @@
+
+import type { WhyMood } from '@/constants/copy/why';
+
 export const FEAR_GREED_CLASSIFICATIONS = [
   'Extreme Fear',
   'Fear',
@@ -8,6 +11,14 @@ export const FEAR_GREED_CLASSIFICATIONS = [
 
 export type FearGreedClassification =
   (typeof FEAR_GREED_CLASSIFICATIONS)[number];
+
+export const FEAR_GREED_MOOD: Record<FearGreedClassification, WhyMood> = {
+  'Extreme Fear': 'extreme_fear',
+  Fear: 'fear',
+  Neutral: 'neutral',
+  Greed: 'greed',
+  'Extreme Greed': 'extreme_greed',
+};
 
 export const FEAR_GREED_ATTRIBUTION = 'alternative.me' as const;
 export const FEAR_GREED_STALE_MS = 36 * 60 * 60 * 1000;
@@ -39,6 +50,7 @@ export type FearGreedChip = {
   label: string;
   value: number;
   classification: FearGreedClassification;
+  mood: string;
   attribution: typeof FEAR_GREED_ATTRIBUTION;
   freshness: string;
 };

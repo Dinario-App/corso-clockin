@@ -127,6 +127,7 @@ import {
   canonTracking,
   canonWeight,
 } from '@/src/ui/cards/canonType';
+import { AMOUNT_MIN_FONT_SCALE } from '@/src/ui/format/amountFit';
 import { ONGLASS, ONGLASS_HI } from '@/src/ui/glass/materialTokens';
 import { ScrollEdgeFade } from '@/src/ui/primitives/ScrollEdgeFade';
 
@@ -208,6 +209,8 @@ export function SendSheetContent({
   const [reviewNewRecipientWarning, setReviewNewRecipientWarning] =
     useState(true);
   const reviewWarningRequestRef = useRef(0);
+  // Shared admission ownership across SOL and USDC, independent of React state.
+  const confirmationPendingRef = useRef(false);
   const [recipientBlurred, setRecipientBlurred] = useState(false);
   const [amountBlurred, setAmountBlurred] = useState(false);
   const [destinationExpanded, setDestinationExpanded] = useState(false);
@@ -475,7 +478,6 @@ export function SendSheetContent({
 
   function onReview() {
     if (sendEnabled !== true) return;
-    // Address judgement first, so a bad destination never reaches a builder.
     const destination = checkRecipientAddress({
       raw: recipient,
       ownerAddress: session?.address ?? null,
@@ -587,6 +589,8 @@ export function SendSheetContent({
       return;
     }
 
+    if (confirmationPendingRef.current) return;
+    confirmationPendingRef.current = true;
     setBusy(true);
     setFormError(null);
     let signer: Awaited<ReturnType<typeof getActiveSigner>> | null = null;
@@ -683,14 +687,20 @@ export function SendSheetContent({
               : 'unknown',
       });
     } finally {
-      signer?.clear?.();
-      setBusy(false);
+      try {
+        signer?.clear?.();
+      } finally {
+        confirmationPendingRef.current = false;
+        setBusy(false);
+      }
     }
   }
 
   async function onConfirmSendUsdc() {
     if (!session?.address || !usdcReview || !cluster) return;
 
+    if (confirmationPendingRef.current) return;
+    confirmationPendingRef.current = true;
     setBusy(true);
     setFormError(null);
     let signer: Awaited<ReturnType<typeof getActiveSigner>> | null = null;
@@ -821,8 +831,12 @@ export function SendSheetContent({
       });
     } finally {
       // submitUsdcTransfer also clears; defense-in-depth for early exits.
-      signer?.clear?.();
-      setBusy(false);
+      try {
+        signer?.clear?.();
+      } finally {
+        confirmationPendingRef.current = false;
+        setBusy(false);
+      }
     }
   }
 
@@ -1000,7 +1014,14 @@ export function SendSheetContent({
         <View style={styles.body}>
           <CorsoText style={styles.subtitle}>{successBody}</CorsoText>
           {amountLabel ? (
-            <CorsoText style={styles.successAmount}>{amountLabel}</CorsoText>
+            <CorsoText
+              style={styles.successAmount}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={AMOUNT_MIN_FONT_SCALE}
+            >
+              {amountLabel}
+            </CorsoText>
           ) : null}
           {signature ? (
             <CorsoText style={styles.mono} selectable>
@@ -1072,7 +1093,12 @@ export function SendSheetContent({
         accessibilityLabel={`${copy.send.reviewSending} ${amountText}`}
         style={styles.reviewHero}
       >
-        <Text style={styles.reviewHeroValue} numberOfLines={2}>
+        <Text
+          style={styles.reviewHeroValue}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={AMOUNT_MIN_FONT_SCALE}
+        >
           {amountText}
         </Text>
         <Text style={styles.reviewHeroSub}>

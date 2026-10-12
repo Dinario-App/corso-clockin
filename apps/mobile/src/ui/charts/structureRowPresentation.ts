@@ -36,7 +36,7 @@ export const STRUCTURE_ROW = Object.freeze({
 export const STRUCTURE_ROW_TIMEFRAME = '1H' as const;
 
 export const STRUCTURE_ROW_COPY = Object.freeze({
-  face: 'Structure',
+  face: copy.chartEdge.structureLegend,
   confluence: copy.chartEdge.confluence,
   lastBreak: 'Last break',
   latest: 'Latest',
@@ -92,6 +92,7 @@ export type StructureRowLine = {
 
 export type StructureRowPresentation = {
   headline: string | null;
+  readUnknown: boolean;
   /** On screen with a score. Not inside the disclosure. */
   scoreCaption: string | null;
   accessibilityLabel: string;
@@ -309,10 +310,18 @@ export function resolveStructureRowPresentation(input: {
 
   return {
     headline,
+    readUnknown: showUnknown,
     scoreCaption,
     accessibilityLabel: spoken,
     lines,
     caveat: caveatParts.length > 0 ? caveatParts.join('\n') : null,
     showOpenTerminal: true,
   };
+}
+
+export function resolveAssetStructureRow(
+  presentation: StructureRowPresentation | null,
+): StructureRowPresentation | null {
+  if (presentation == null || presentation.readUnknown) return null;
+  return presentation;
 }

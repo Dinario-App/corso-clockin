@@ -23,11 +23,12 @@ Corso is developed in a private monorepo. On request, we can walk the organizer 
 | `packages/disclosures/` | `@corso/disclosures` (disclosure IDs shared by app and API) |
 | `packages/why/` | `@corso/why` (reason codes the app turns into its own copy) |
 
-The backend API isn't part of this snapshot. The app's copy and refusal tables for the Ask feature, which normally live with the API, are included at `apps/mobile/src/features/ask/server-copy/` so the app builds on its own. They are the API's files with only their comments removed. `src/features/ask/askText.ts` and `src/features/ask/askAnswerBoundary.ts` import them from that folder instead of from the API.
+The backend API isn't part of this snapshot. The app's copy and refusal tables for the Ask feature, which normally live with the API, are included at `apps/mobile/src/features/ask/server-copy/` so the app builds on its own. They are the API's files with only their comments removed (`classifierContract.ts` is included because `modelSeam.ts` imports it). `src/features/ask/askText.ts` and `src/features/ask/askAnswerBoundary.ts` import them from that folder instead of from the API.
 
 ## Differences from the submitted build
 
 - The Ask copy and refusal tables are copied in, and two import paths point at them (described above).
+- The submitted APK is built with the wealth home switched on (`EXPO_PUBLIC_FLAG_WEALTH_V1=1`, `EXPO_PUBLIC_FLAG_WEALTH_HIDE_DOING=1`). These are build-time switches, not code changes; the build commands below set them. Without them the app builds with its earlier home screen.
 - A development-only preview screen (`app/dev/`) and the sample data it used are removed. In a release build that screen only showed a "development build only" message.
 - The provider sign-in and model-client code of the switched-off AI connect feature is removed. None of it was in the submitted app bundle; the few types other files still use are now in `aiConnect/types.ts`.
 - Two unused exported values (a table of design notes and a duplicate privacy-policy helper) are removed, and three internal descriptions in `src/features/session/localClearRegistry.ts` are reworded. The app never reads or shows them.
@@ -38,6 +39,7 @@ Requirements: Node 20 or later, pnpm 9.15, JDK 17, and the Android SDK (with `AN
 
 ```sh
 export CORSO_FLAVOR=seeker CORSO_SEEKER_TRACK=production APP_ENV=production
+export EXPO_PUBLIC_FLAG_WEALTH_V1=1 EXPO_PUBLIC_FLAG_WEALTH_HIDE_DOING=1
 pnpm install --frozen-lockfile
 cd apps/mobile
 npx expo prebuild --platform android --clean

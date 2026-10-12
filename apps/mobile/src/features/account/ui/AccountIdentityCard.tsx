@@ -13,8 +13,7 @@ import {
 import { ACCOUNT_IDENTITY_CARD_STYLE } from './profileRootPaint';
 
 export type AccountIdentityCardProps = {
-  /** The account's display name. No name service is resolved anywhere in the app. */
-  name: string;
+  name: string | null;
   /** Display data already masked by the session identity projection. */
   maskedEmail?: string | null;
   /** The full address, copied verbatim. `null` draws the card with no address row. */
@@ -65,9 +64,13 @@ export function AccountIdentityCard({
 
   return (
     <ProfileRootPane testID={testID ?? 'account-identity-card'} style={CARD}>
-      <CorsoText style={profileRootType.identityName} numberOfLines={1}>
-        {name}
-      </CorsoText>
+      {name === null ? (
+        <View style={NAME_PENDING} testID="account-identity-name-pending" />
+      ) : (
+        <CorsoText style={profileRootType.identityName} numberOfLines={1}>
+          {name}
+        </CorsoText>
+      )}
       {maskedEmail ? (
         <CorsoText style={profileRootType.address} numberOfLines={1}>
           {maskedEmail}
@@ -111,6 +114,11 @@ const MONO: TextStyle = {
    */
   fontVariant: ['tabular-nums', 'slashed-zero'] as TextStyle['fontVariant'],
 };
+
+/** Holds the name line's height while the saved name is read. Draws nothing. */
+const NAME_PENDING = {
+  height: profileRootType.identityName.lineHeight,
+} as const;
 
 const CARD = ACCOUNT_IDENTITY_CARD_STYLE;
 

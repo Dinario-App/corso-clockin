@@ -7,12 +7,6 @@ import { ETHENA_BODY_MARGIN, ETHENA_TYPE } from '@/constants/theme.ethenaType';
 import { presentFearGreedChip } from './presentFearGreedChip';
 import { useFearGreed } from './useFearGreed';
 
-/**
- * Review mood chip. Missing or stale data returns nothing, footer included.
- * The label is the value plus the micro vendor name. The quiet line under it
- * is the one shared Review footer (`copy.reviewReads.footer`), not a
- * per-chip essay. Never a Sign input.
- */
 export function ReviewFearGreedSlot() {
   const chip = presentFearGreedChip(useFearGreed());
   if (!chip) return null;

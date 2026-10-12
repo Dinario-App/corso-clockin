@@ -1,11 +1,13 @@
-import { SymbolView } from 'expo-symbols';
+
 import type { ColorValue, StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import {
   CORSO_ICON_NAMES,
   type CorsoIconName,
 } from '@/src/ui/icons/corsoIconNames';
+import { PHOSPHOR_REGULAR } from '@/src/ui/icons/phosphorRegular';
 
 export type CorsoIconProps = {
   name: CorsoIconName;
@@ -17,9 +19,15 @@ export type CorsoIconProps = {
   accessibilityLabel?: string;
 };
 
+/** The Phosphor path for a name, or `null` when the name is not in the set. */
+export function corsoIconPath(name: CorsoIconName): string | null {
+  const phosphor = CORSO_ICON_NAMES[name];
+  return phosphor == null ? null : PHOSPHOR_REGULAR[phosphor];
+}
+
 /**
- * Fixed-size monochrome symbol. Layout box is always `size`×`size` so
- * tab/quick-action circles do not jump while fonts load on Android.
+ * Fixed-size monochrome glyph. Layout box is always `size`×`size` so
+ * tab/quick-action circles do not jump. An unknown name draws an empty box.
  */
 export function CorsoIcon({
   name,
@@ -28,7 +36,7 @@ export function CorsoIcon({
   style,
   accessibilityLabel,
 }: CorsoIconProps) {
-  const platformNames = CORSO_ICON_NAMES[name];
+  const d = corsoIconPath(name);
   const boxStyle: ViewStyle = { width: size, height: size };
 
   return (
@@ -40,19 +48,11 @@ export function CorsoIcon({
       }
       accessibilityLabel={accessibilityLabel}
     >
-      <SymbolView
-        name={{
-          ios: platformNames.ios as never,
-          android: platformNames.android as never,
-          web: platformNames.web as never,
-        }}
-        size={size}
-        tintColor={color}
-        type="monochrome"
-        weight="regular"
-        style={boxStyle}
-        fallback={<View style={boxStyle} />}
-      />
+      {d == null ? null : (
+        <Svg width={size} height={size} viewBox="0 0 256 256" fill={color}>
+          <Path d={d} />
+        </Svg>
+      )}
     </View>
   );
 }

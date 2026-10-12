@@ -1,3 +1,6 @@
+import type { PlainRiskRead } from '@/src/features/plainRisk/parsePlainRisk';
+
+
 export const VITALS_SCHEMA_VERSION = 1 as const;
 
 export const VITALS_TIMEFRAMES = ['1m', '5m', '1h', '4h', '1d', '1w'] as const;
@@ -253,6 +256,7 @@ export type VitalsPayload = {
   chart: VitalsChart;
   tradeLeadIn?: VitalsTradeLeadIn;
   disclosures: VitalsDisclosures;
+  plainRisk?: PlainRiskRead;
 };
 
 export type VitalsDisambiguationChoice = {

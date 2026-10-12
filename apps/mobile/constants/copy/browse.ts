@@ -5,13 +5,13 @@ export const browseCopy = {
     short: {
       change24h: '24h',
       marketCap: 'Cap',
-      liquidity: 'LP',
+      liquidity: 'Pool',
       risk: 'Risk',
     } as const,
     option: {
       change24h: '24h change',
       marketCap: 'Market cap',
-      liquidity: 'Liquidity',
+      liquidity: 'Pool size',
       risk: 'Risk',
     } as const,
     buttonA11y: (current: string) => `Sort by ${current}. Change the sort`,

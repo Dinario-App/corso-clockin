@@ -176,16 +176,16 @@ export function presentReviewSign(read: ReviewSignRead): ReviewSignModel {
     caution:
       state === 'aging'
         ? {
-            heading: `This quote is ${Math.floor(Math.max(0, read.nowMs - (read.appliedAtMs ?? read.nowMs)) / 1000)}s old.`,
-            body: 'If it expires, you get a new quote first.',
+            heading: `This price is from ${Math.floor(Math.max(0, read.nowMs - (read.appliedAtMs ?? read.nowMs)) / 1000)}s ago.`,
+            body: 'If it expires, we get you a new price first.',
           }
         : state === 'expired'
           ? {
               heading:
                 q && expiry(q.expireAt, read.nowMs) === 'expired'
-                  ? 'This quote expired.'
-                  : 'Get a new quote',
-              body: 'Get a new quote first.',
+                  ? 'This price expired.'
+                  : 'Get a new price',
+              body: 'Get a new price first.',
             }
           : state === 'unconfirmed'
             ? {
@@ -232,7 +232,7 @@ export function presentReviewSign(read: ReviewSignRead): ReviewSignModel {
     wait: state === 'off' || state === 'unconfirmed' ? 'Back' : 'Wait',
     sign:
       action === 'requote'
-        ? 'Get a new quote'
+        ? 'Get a new price'
         : action === 'addCash'
           ? 'Add cash'
           : action === 'retry'

@@ -19,6 +19,8 @@ export type Refusal = {
   copy: string;
 };
 
+const DISCRETIONARY_COPY = "I don't pick for you. Name it and I'll show you the trade.";
+
 const EXIT_SHAPED_TRIGGERS: readonly RegExp[] = [
   /\b(if|when|once) it (drops|falls|dips|rises|pumps|hits|goes)\b/i,
   /\bstop[- ]loss\b/i,
@@ -26,11 +28,6 @@ const EXIT_SHAPED_TRIGGERS: readonly RegExp[] = [
   /\bset (a |an )?(limit|stop|alert|order)\b/i,
 ];
 
-/**
- * Ordered most-specific first. First match wins, and the order is load-bearing:
- * "should I stake" must land on `yield`, not `investment_advice`, and
- * "is this a good entry" must land on `predict_price` for the same reason.
- */
 const RULES: Array<Refusal & { triggers: RegExp[] }> = [
   {
     code: 'sign_without_user',
@@ -125,7 +122,7 @@ const RULES: Array<Refusal & { triggers: RegExp[] }> = [
   {
     code: 'trending_redirect',
     row: 6,
-    copy: "I don't pick for you. The Moving list is right there — tap a row to look, or name a token and I'll show you the trade.",
+    copy: DISCRETIONARY_COPY,
     triggers: [
       /\bwhat’?s trending\b/i,
       /\bwhat's trending\b/i,
@@ -138,7 +135,7 @@ const RULES: Array<Refusal & { triggers: RegExp[] }> = [
   {
     code: 'discretionary',
     row: 6,
-    copy: "I don't pick for you. Name it and I'll show you the trade.",
+    copy: DISCRETIONARY_COPY,
     triggers: [
       /\bwhatever’?s? best\b/i,
       /\bwhatever's best\b/i,
@@ -199,10 +196,6 @@ export function refusalCopy(code: RefusalCode): string {
   return found.copy;
 }
 
-/**
- * Runs before the model on every platform, and again over the model's answer.
- * Returns null when nothing fires — the common case.
- */
 export function detectRefusal(
   text: string,
   routinesEnabled = false,
@@ -227,7 +220,6 @@ export function detectRefusal(
   return null;
 }
 
-/** Exit-shaped row-7 input becomes a staging candidate only when routines are enabled. */
 export function isExitShapedRoutine(text: string): boolean {
   return EXIT_SHAPED_TRIGGERS.some((trigger) => trigger.test(text));
 }
@@ -244,8 +236,6 @@ export function detectOutOfScope(
 ): Refusal | null {
   if (SWAP_VERB.test(text)) return null;
   if (!QUESTION_SHAPE.test(text.trim())) return null;
-  // A pasted address has already named the token exactly; there is nothing
-  // left for Corso to fail to identify.
   if (scope.pastedMint) return null;
   if (!mentionedSymbol) return null;
   return isSymbolInScope(mentionedSymbol, scope) ? null : OUT_OF_SCOPE;

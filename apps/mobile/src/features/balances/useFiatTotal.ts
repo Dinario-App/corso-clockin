@@ -13,6 +13,7 @@ import {
   type UsdcQuantityInput,
 } from '@/src/features/balances/holdingsSnapshot';
 import {
+  PRICE_QUOTES_REFRESH_MS,
   usePriceQuotes,
   type LoadPriceQuotesDeps,
   type PriceQuotesStatus,
@@ -329,6 +330,7 @@ export function useFiatTotal(
     resolveConfig: deps.resolveConfig,
     fetchPricesImpl: deps.fetchPricesImpl,
     nowMs: deps.nowMs,
+    refreshIntervalMs: PRICE_QUOTES_REFRESH_MS,
   });
 
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(

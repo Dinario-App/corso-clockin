@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { usePlainRisk } from '@/src/features/plainRisk/usePlainRisk';
+import { RiskLevelSlot, spokenRiskLevel } from '@/src/ui/risk/RiskLevel';
+import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -11,7 +12,6 @@ import {
 } from 'react-native';
 import { useKeyboardOverlapInset } from '@/src/ui/primitives/useKeyboardOverlapInset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Clipboard from 'expo-clipboard';
 import { copy } from '@/constants/copy';
 import { colors, typography } from '@/constants/theme';
 import { ethena } from '@/constants/theme.ethena';
@@ -23,20 +23,18 @@ import { resolveFloatGlassSurface } from '@/src/ui/glass/corsoGlassRecipe';
 import { CorsoText } from '@/src/theme/CorsoText';
 import { liftInkColor } from '@/src/ui/glass/inkContrast';
 import { useInkContrastEnabled } from '@/src/ui/glass/useInkContrast';
+import { matchPickerQuery } from '@/src/features/swap/heldTokenPicker';
 import {
-  buildPickerRows,
-  type PickerRow,
-} from '@/src/features/swap/heldTokenPicker';
-import {
-  fetchTokenSearchOutcome,
-  type TokenSearchResult,
-} from '@/src/features/swap/fetchTokenSearch';
+  curatedSwapToken,
+  searchCuratedBook,
+  type CuratedBook,
+  type CuratedName,
+} from '@/src/features/universe/curatedBook';
+import type { CuratedBookState } from '@/src/features/universe/useCuratedBook';
 import {
   buildPickerFactsSubtitle,
-  buildPickerRowRisk,
   buildTokenIdentityPresentation,
 } from '@/src/features/tokenFacts/formatTokenFactsDisplay';
-import { resolveRugcheckDangerLinePresentation } from '@/src/features/tokenFacts/rugcheckReviewPresentation';
 import { useTokenFacts } from '@/src/features/tokenFacts/useTokenFacts';
 import type { SwapToken } from '@/src/features/swap/tokens';
 import { resolveAcquireAccess } from '@/src/features/security/acquireAccessPresentation';
@@ -49,27 +47,49 @@ import {
   resolveBottomSheetBottomInset,
 } from '@/src/ui/primitives/bottomSheetPresentation';
 
-/** Long enough that every keystroke is not a Jupiter round trip. */
-const SEARCH_DEBOUNCE_MS = 300;
-/** One character matches half the chain; two is the shortest useful query. */
+/**
+ * Two characters is the shortest useful query, and every listed row reads its
+ * own facts, so one character does not list half the book.
+ */
 const MIN_SEARCH_LENGTH = 2;
+
+/**
+ * One sheet row: a held token as the caller handed it, or a curated-book name.
+ */
+type SheetRow = {
+  mint: string;
+  symbol: string;
+  held: SwapToken | null;
+  curated: CuratedName | null;
+};
 
 function TokenPickerOption({
   token,
+  held,
+  curated,
   selected,
   onSelect,
   nowMs,
-  searchIdentity,
   acquireGateInputs,
 }: {
-  token: SwapToken;
+  token: { mint: string; symbol: string };
+  held: SwapToken | null;
+  curated: CuratedName | null;
   selected: boolean;
-  onSelect: () => void;
+  onSelect: (token: SwapToken) => void;
   nowMs: number;
-  searchIdentity: TokenSearchResult | null;
   acquireGateInputs: JurisdictionGateInputs | null;
 }) {
   const { status, facts, error } = useTokenFacts(token.mint);
+  const chainDecimals =
+    facts?.mint === token.mint && facts.sources.chain.status === 'ok'
+      ? facts.sources.chain.fields.decimals
+      : null;
+  const pick =
+    held ??
+    (curated
+      ? curatedSwapToken(curated, curated.decimals ?? chainDecimals)
+      : null);
   const subtitle = buildPickerFactsSubtitle({
     status,
     facts,
@@ -77,11 +97,7 @@ function TokenPickerOption({
     nowMs,
     includeIdentity: false,
   });
-  // RugCheck risk is a separate speech act from Jupiter identity verification.
-  // It may add a provider-backed warning line, but it never supplies the
-  // Verified label below.
-  const risk = buildPickerRowRisk({ status, facts });
-  const dangerLine = resolveRugcheckDangerLinePresentation(risk);
+  const plainRisk = usePlainRisk(token.mint);
   const jupiterFacts =
     facts?.sources.jupiter.status === 'ok'
       ? facts.sources.jupiter.fields
@@ -106,8 +122,7 @@ function TokenPickerOption({
     identity.liquidityLabel ??
       `${copy.tokenFacts.liquidity} ${copy.tokenFacts.unknown.toLowerCase()}`,
     subtitle,
-    risk.ambientDescription,
-    dangerLine?.text,
+    spokenRiskLevel(plainRisk),
     acquireRefusedNote,
   ]
     .filter((part): part is string => part != null)
@@ -116,9 +131,12 @@ function TokenPickerOption({
   return (
     <Pressable
       style={styles.row}
-      onPress={onSelect}
+      onPress={() => {
+        if (pick) onSelect(pick);
+      }}
+      disabled={pick == null}
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled: pick == null }}
       accessibilityLabel={accessibilityLabel}
     >
       <View style={styles.rowMain}>
@@ -143,19 +161,7 @@ function TokenPickerOption({
         <CorsoText style={styles.subtitle} numberOfLines={2}>
           {subtitle}
         </CorsoText>
-        {risk.ambientDescription ? (
-          <CorsoText style={styles.riskLine} numberOfLines={2}>
-            {risk.ambientDescription}
-          </CorsoText>
-        ) : null}
-        {dangerLine ? (
-          <CorsoText
-            style={[styles.dangerLine, dangerLine.style]}
-            numberOfLines={2}
-          >
-            {dangerLine.text}
-          </CorsoText>
-        ) : null}
+        <RiskLevelSlot read={plainRisk} testID={`picker-row-${token.mint}-risk`} />
         {acquireRefusedNote ? (
           <CorsoText style={styles.riskLine} numberOfLines={2}>
             {acquireRefusedNote}
@@ -174,7 +180,8 @@ export function SwapTokenPickerSheet({
   onSelect,
   onClose,
   nowMs = Date.now(),
-  allowSearch = false,
+  book = null,
+  bookState = 'loading',
   acquireRows = false,
 }: {
   visible: boolean;
@@ -184,7 +191,8 @@ export function SwapTokenPickerSheet({
   onSelect: (token: SwapToken) => void;
   onClose: () => void;
   nowMs?: number;
-  allowSearch?: boolean;
+  book?: CuratedBook | null;
+  bookState?: CuratedBookState;
   acquireRows?: boolean;
 }) {
   const insets = useSafeAreaInsets();
@@ -195,73 +203,36 @@ export function SwapTokenPickerSheet({
   const gateInputs = useAcquireGateInputs(visible && acquireRows);
   const acquireGateInputs = acquireRows ? gateInputs : null;
   const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<TokenSearchResult[]>([]);
-  // `searching` runs from the keystroke until that query's search settles, so
-  // an open search does not look like a sheet nobody typed in. `failed` is a
-  // failure this side can see; the API answers its own vendor's failure as a
-  // search that ran, so that one settles as `ran`.
-  const [searchPhase, setSearchPhase] = useState<
-    'idle' | 'searching' | 'ran' | 'failed'
-  >('idle');
-  // Bumped by Retry to run the same query again.
-  const [searchAttempt, setSearchAttempt] = useState(0);
   const [fadeTop, setFadeTop] = useState(0);
 
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!visible || !allowSearch || trimmed.length < MIN_SEARCH_LENGTH) {
-      setSearchResults([]);
-      setSearchPhase('idle');
-      return;
-    }
-
-    setSearchPhase('searching');
-    const abort = new AbortController();
-    const handle = setTimeout(() => {
-      void (async () => {
-        const outcome = await fetchTokenSearchOutcome({
-          query: trimmed,
-          signal: abort.signal,
-        });
-        if (!abort.signal.aborted) {
-          setSearchResults(outcome.status === 'ok' ? outcome.results : []);
-          setSearchPhase(outcome.status === 'ok' ? 'ran' : 'failed');
-        }
-      })();
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      clearTimeout(handle);
-      abort.abort();
-    };
-  }, [allowSearch, query, searchAttempt, visible]);
-
-  const rows: PickerRow[] = useMemo(
-    () =>
-      buildPickerRows({
-        held: tokens,
-        searchResults: searchResults.map((result) => result.token),
-        query,
+  const trimmedQuery = query.trim();
+  const searched = book != null && trimmedQuery.length >= MIN_SEARCH_LENGTH;
+  const rows: SheetRow[] = useMemo(() => {
+    const heldRows = matchPickerQuery(tokens, query).map(
+      (token): SheetRow => ({
+        mint: token.mint,
+        symbol: token.symbol,
+        held: token,
+        curated: null,
       }),
-    [tokens, searchResults, query],
-  );
-  const searchIdentityByMint = useMemo(
-    () => new Map(searchResults.map((result) => [result.token.mint, result])),
-    [searchResults],
-  );
-
-  async function pasteMint() {
-    try {
-      const next = await Clipboard.getStringAsync();
-      setQuery(next.trim());
-    } catch {
-      // Stay on the typed query.
-    }
-  }
+    );
+    if (!searched || book == null) return heldRows;
+    const seen = new Set(heldRows.map((row) => row.mint));
+    const bookRows = searchCuratedBook(book, query)
+      .filter((name) => !seen.has(name.mint))
+      .map(
+        (name): SheetRow => ({
+          mint: name.mint,
+          symbol: name.symbol,
+          held: null,
+          curated: name,
+        }),
+      );
+    return [...heldRows, ...bookRows];
+  }, [tokens, query, book, searched]);
 
   function close() {
     setQuery('');
-    setSearchResults([]);
     setFadeTop(0);
     onClose();
   }
@@ -310,7 +281,7 @@ export function SwapTokenPickerSheet({
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={copy.v1.searchOrPaste}
+                placeholder={copy.sleeve.findToken}
                 placeholderTextColor={liftInkColor(
                   ethena.ink.tertiary,
                   increaseContrast,
@@ -318,20 +289,10 @@ export function SwapTokenPickerSheet({
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={styles.search}
-                accessibilityLabel={copy.v1.searchOrPaste}
+                accessibilityLabel={copy.sleeve.findToken}
               />
-              <Pressable
-                onPress={() => {
-                  void pasteMint();
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={copy.v1.paste}
-                style={styles.paste}
-              >
-                <CorsoText style={styles.pasteLabel}>{copy.v1.paste}</CorsoText>
-              </Pressable>
             </View>
-            {allowSearch ? (
+            {book != null ? (
               <CorsoText style={styles.verifiedMeaning}>
                 {copy.tokenFacts.verifiedMeaning}
               </CorsoText>
@@ -349,55 +310,36 @@ export function SwapTokenPickerSheet({
               >
                 {rows.map((row) => (
                   <TokenPickerOption
-                    key={row.token.mint}
-                    token={row.token}
-                    selected={row.token.mint === selectedMint}
+                    key={row.mint}
+                    token={row}
+                    held={row.held}
+                    curated={row.curated}
+                    selected={row.mint === selectedMint}
                     nowMs={nowMs}
-                    searchIdentity={
-                      searchIdentityByMint.get(row.token.mint) ?? null
-                    }
                     acquireGateInputs={acquireGateInputs}
-                    onSelect={() => {
-                      onSelect(row.token);
+                    onSelect={(token) => {
+                      onSelect(token);
                       close();
                     }}
                   />
                 ))}
-                {/* The label is for a screen reader only; nothing is printed. */}
-                {searchPhase === 'searching' ? (
-                  <View style={styles.searchStatus}>
-                    <ActivityIndicator
-                      color={ethena.ink.primary}
-                      accessible
-                      accessibilityRole="progressbar"
-                      accessibilityLabel={copy.v1.searching}
-                    />
-                  </View>
-                ) : null}
                 {/* Only when the sheet has no row at all: a held match is
                     something to show. */}
-                {searchPhase === 'ran' && rows.length === 0 ? (
+                {searched && rows.length === 0 && bookState === 'served' ? (
                   <View style={styles.searchStatus}>
+                    <CorsoText style={styles.searchStatusTitle}>
+                      {copy.v1.searchNoMatchTitle}
+                    </CorsoText>
                     <CorsoText style={styles.searchStatusLine}>
-                      {copy.v1.searchNothing}
+                      {copy.v1.searchNoMatchBody}
                     </CorsoText>
                   </View>
                 ) : null}
-                {searchPhase === 'failed' ? (
+                {searched && rows.length === 0 && bookState === 'failed' ? (
                   <View style={styles.searchStatus}>
                     <CorsoText style={styles.searchStatusLine}>
                       {copy.v1.searchFailed}
                     </CorsoText>
-                    <Pressable
-                      onPress={() => setSearchAttempt((n) => n + 1)}
-                      accessibilityRole="button"
-                      accessibilityLabel={copy.vitals.retry}
-                      style={styles.paste}
-                    >
-                      <CorsoText style={styles.pasteLabel}>
-                        {copy.vitals.retry}
-                      </CorsoText>
-                    </Pressable>
                   </View>
                 ) : null}
               </ScrollView>
@@ -460,16 +402,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: ethena.hair,
   },
-  paste: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  pasteLabel: {
-    ...ETHENA_TYPE.cardAction,
-    color: ethena.ink.primary,
-    fontWeight: '600',
-  },
   row: {
     minHeight: 56,
     flexDirection: 'row',
@@ -479,11 +411,15 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 4,
   },
-  // 18 + a 20pt spinner + 18 is one row, so the first result takes the
-  // spinner's place without a jump.
   searchStatus: {
     alignItems: 'center',
+    gap: 6,
     paddingVertical: 18,
+  },
+  searchStatusTitle: {
+    ...ETHENA_TYPE.navMid,
+    color: ethena.ink.primary,
+    textAlign: 'center',
   },
   searchStatusLine: {
     ...ETHENA_TYPE.rowSub,

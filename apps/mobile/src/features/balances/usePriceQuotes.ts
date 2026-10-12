@@ -60,6 +60,12 @@ export type LoadPriceQuotesDeps = {
   mints?: string[];
 };
 
+export type UsePriceQuotesDeps = LoadPriceQuotesDeps & {
+  refreshIntervalMs?: number;
+};
+
+export const PRICE_QUOTES_REFRESH_MS = 30_000;
+
 const EMPTY_QUOTES: PriceQuoteMap = {};
 
 /** Generation guard — same semantics as balance hooks. */
@@ -154,7 +160,7 @@ export async function loadPriceQuotes(
  * Fetches on mount; exposes explicit refresh. Never takes a wallet address.
  */
 export function usePriceQuotes(
-  deps: LoadPriceQuotesDeps = {},
+  deps: UsePriceQuotesDeps = {},
 ): PriceQuotesState {
   const [status, setStatus] = useState<PriceQuotesStatus>('idle');
   const [snapshot, setSnapshot] = useState<PriceSnapshot | null>(null);
@@ -173,9 +179,15 @@ export function usePriceQuotes(
   const fetchPricesImpl = deps.fetchPricesImpl;
   const nowMs = deps.nowMs;
   const mintsKey = deps.mints?.join(',') ?? '';
+  const refreshIntervalMs = deps.refreshIntervalMs ?? 0;
 
+  /**
+   * `poll` is a timer refresh: same fail-closed reducer as `refresh` (a failed
+   * read keeps the old snapshot and its clock), but it never raises
+   * `refreshing`, so no spinner blinks every 30s.
+   */
   const load = useCallback(
-    async (mode: 'initial' | 'refresh') => {
+    async (mode: 'initial' | 'refresh' | 'poll') => {
       const id = ++requestId.current;
       if (mode === 'refresh') {
         setRefreshing(true);
@@ -202,7 +214,7 @@ export function usePriceQuotes(
 
         const next = reducePriceQuotesFetch({
           prev: coreRef.current,
-          mode,
+          mode: mode === 'initial' ? 'initial' : 'refresh',
           result,
         });
         coreRef.current = next;
@@ -222,6 +234,14 @@ export function usePriceQuotes(
   useEffect(() => {
     void load('initial');
   }, [load]);
+
+  useEffect(() => {
+    if (!(refreshIntervalMs > 0)) return;
+    const timer = setInterval(() => {
+      void load('poll');
+    }, refreshIntervalMs);
+    return () => clearInterval(timer);
+  }, [load, refreshIntervalMs]);
 
   const refresh = useCallback(async () => {
     await load('refresh');

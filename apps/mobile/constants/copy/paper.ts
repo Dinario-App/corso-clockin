@@ -36,9 +36,8 @@ export const paperCopy = {
   },
   perDayMaxFires: 'Swaps per day',
   perDayMaxUsd: 'Daily cap (USD)',
-  minOutBps: 'Slippage limit (bps)',
-  minOutBpsHint:
-    '100 bps = 1%. The simulation charges all of it on every swap.',
+  minOutBps: 'Max price move (%)',
+  minOutBpsHint: 'The practice run charges all of it on every swap.',
   windows: { 7: '7 days', 30: '30 days' } as const,
   run: 'Run on past prices',
   running: 'Running…',
@@ -48,14 +47,14 @@ export const paperCopy = {
     unavailable: 'Price history is unavailable. Try again shortly.',
     no_data: 'Not enough price history for this token.',
     no_depth:
-      'No fresh liquidity reading for this token, so there is nothing honest to simulate against.',
-    unsupported_network: 'Paper bots run on Solana mainnet prices only.',
+      "We don't have a fresh read on how much money is in this token's pool, so there's nothing honest to practice against.",
+    unsupported_network: 'Practice runs use main Solana network prices only.',
     failed: 'The simulation could not run. Try again.',
   },
   result: {
     banner: 'Simulation. Not a forecast.',
     bannerBody:
-      'Real fills differ. This run is built to come out worse than a real bot, using the worst prices printed and today’s liquidity. It is a model, not a promise.',
+      "Real trades differ. This run is built to come out worse than a real bot, using the worst prices seen and the money in the pool today. It's a model, not a promise.",
     assumptionsHeading: 'What it assumed',
     model: {
       constant_product:
@@ -65,16 +64,16 @@ export const paperCopy = {
       'Every swap fills at the worst price printed from the start of the bar where the rule fired, not the price that triggered it.',
     assumptionLatency: (minutes: number) =>
       `A bot lands after a delay, so each swap waits at least ${minutes} min of prices.`,
-    assumptionSlippage: (bps: number) =>
-      `Your full ${bps} bps slippage limit is charged on every swap.`,
-    assumptionFee: (bps: number) =>
-      `The Corso fee (${bps} bps) comes off every swap.`,
+    assumptionSlippage: (pct: string) =>
+      `Your full ${pct}% max price move is charged on every swap.`,
+    assumptionFee: (pct: string) =>
+      `The Corso fee (${pct}%) comes off every swap.`,
     assumptionDepth: (usd: string) =>
-      `Each swap fills against a pool half the size of today’s reported liquidity (${usd}), so bigger swaps fill worse.`,
+      `Each swap trades against a pool half the size of today's (${usd}), so bigger swaps get worse prices.`,
     assumptionMark: 'Anything still held is valued at the last low price.',
     notModelledHeading: 'What it cannot see',
     notModelled:
-      'How thin the market was in the past, a route thinner than this model, dips that recovered inside one price bar, and swaps that would have failed.',
+      'How thin the market was in the past, pools thinner than this model assumes, dips that recovered within one price bar, and swaps that would have failed.',
     summaryHeading: 'Result',
     start: 'Started with',
     end: 'Ended with',

@@ -1,6 +1,7 @@
 import type { PriceCluster } from '@/src/features/balances/priceSnapshot';
 import { SOL_MINT, usdcMintForCluster } from '@/src/features/swap/tokens';
 import {
+  isCuratedMajor,
   resolveRugcheckReviewPresentation,
   type RugcheckReviewPresentation,
 } from '@/src/features/tokenFacts/rugcheckReviewPresentation';
@@ -56,19 +57,67 @@ export function selectSwapRiskLeg<T>(args: {
 }
 
 export function resolveSwapRiskPresentation(args: {
+  cluster?: PriceCluster | null;
   leg: SwapRiskLeg;
   payMint: string | null | undefined;
   receiveMint: string | null | undefined;
   payFacts: TokenFactsResponse | null;
   receiveFacts: TokenFactsResponse | null;
 }): RugcheckReviewPresentation {
-  const mint = selectSwapRiskLeg({
+  const subjectMint = selectSwapRiskLeg({
     leg: args.leg,
     pay: args.payMint,
     receive: args.receiveMint,
   });
+  const otherLeg = args.leg === 'pay' ? 'receive' : 'pay';
+  const otherMint = selectSwapRiskLeg({
+    leg: otherLeg,
+    pay: args.payMint,
+    receive: args.receiveMint,
+  });
+  // Exempting the major must not exempt a non-major on the other side.
+  // Keep the panel/signing leg binding intact; only the acknowledgement moves.
+  const presentationLeg =
+    isCuratedMajor(subjectMint, args.cluster) &&
+    !isQuoteMint({ mint: otherMint, cluster: args.cluster }) &&
+    !isCuratedMajor(otherMint, args.cluster)
+      ? otherLeg
+      : args.leg;
+  const subject = resolveLegRiskPresentation(args, presentationLeg);
+  const bothNonMajors =
+    !!args.cluster &&
+    [args.payMint, args.receiveMint].every(
+      (mint) =>
+        !!mint &&
+        !isQuoteMint({ mint, cluster: args.cluster }) &&
+        !isCuratedMajor(mint, args.cluster),
+    );
+  if (!bothNonMajors) return subject;
+
+  const opposite = resolveLegRiskPresentation(args, otherLeg);
+  // A known Danger outranks unchecked, then Warning, then Good. On ties,
+  // retain the subject's descriptions and presentation deterministically.
+  return riskPriority(opposite) > riskPriority(subject) ? opposite : subject;
+}
+
+function riskPriority(presentation: RugcheckReviewPresentation): number {
+  if (presentation.tier === 'Danger') return 3;
+  if (presentation.requiresAcknowledgement) return 2;
+  if (presentation.tier === 'Warning') return 1;
+  return 0;
+}
+
+function resolveLegRiskPresentation(
+  args: Parameters<typeof resolveSwapRiskPresentation>[0],
+  leg: SwapRiskLeg,
+): RugcheckReviewPresentation {
+  const mint = selectSwapRiskLeg({
+    leg,
+    pay: args.payMint,
+    receive: args.receiveMint,
+  });
   const facts = selectSwapRiskLeg({
-    leg: args.leg,
+    leg,
     pay: args.payFacts,
     receive: args.receiveFacts,
   });
@@ -80,6 +129,7 @@ export function resolveSwapRiskPresentation(args: {
   const unchecked = exactFacts?.sources.rugcheck.status !== 'ok';
   const unverified = exactFacts?.sources.jupiter.fields.isVerified !== true;
   return resolveRugcheckReviewPresentation({
+    curatedMajor: isCuratedMajor(mint, args.cluster),
     tier: rugcheck?.riskLevel ?? null,
     descriptions: rugcheck?.riskDescriptions ?? [],
     uncheckedUnverified: unchecked && unverified,

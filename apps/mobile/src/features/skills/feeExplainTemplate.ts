@@ -84,7 +84,7 @@ export function composeFeeExplain(input: FeeExplainInput): FeeExplainView {
   ) {
     lines.push({
       templateId: TEMPLATE_IDS.FEE_PRICE_IMPACT,
-      text: `Price impact about ${input.priceImpactPct.trim()}%. Bigger swaps move the price more.`,
+      text: `Your trade moves the price about ${input.priceImpactPct.trim()}%. Bigger trades move it more.`,
     });
   }
 
@@ -109,7 +109,7 @@ export function composeFeeExplain(input: FeeExplainInput): FeeExplainView {
   ) {
     lines.push({
       templateId: TEMPLATE_IDS.FEE_SOL_RESERVE,
-      text: 'Leave a little SOL for network fees and token accounts.',
+      text: 'Keep a little SOL for network fees and one-time account costs.',
     });
   }
 
@@ -138,7 +138,7 @@ export function composeCorsoFeeExplain(
   if (!view.feeDropped && view.corsoFeeBps != null) {
     lines.push({
       templateId: TEMPLATE_IDS.FEE_CORSO_ON_TOP,
-      text: "This is Corso's fee, on top of the route. It comes out of what you receive.",
+      text: "This is Corso's fee, separate from the price. It comes out of what you receive.",
     });
   }
   return lines;

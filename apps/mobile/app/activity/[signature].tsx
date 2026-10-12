@@ -38,6 +38,7 @@ import { PrimaryCTA } from '@/src/ui/controls/PrimaryCTA';
 import { ScrollEdgeFade } from '@/src/ui/primitives/ScrollEdgeFade';
 import { SecondaryCTA } from '@/src/ui/controls/SecondaryCTA';
 import { Toast } from '@/src/ui/feedback/Toast';
+import { AMOUNT_MIN_FONT_SCALE } from '@/src/ui/format/amountFit';
 import { HeaderRow } from '@/src/ui/navigation/HeaderRow';
 import { Surface } from '@/src/ui/primitives/Surface';
 import { MetaRow } from '@/src/ui/rows/MetaRow';
@@ -175,6 +176,9 @@ export default function ActivityDetailScreen() {
               {amount ? (
                 <CorsoText
                   style={styles.amount}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={AMOUNT_MIN_FONT_SCALE}
                   accessibilityLabel={
                     hideBalances
                       ? copy.profile.preferencesBalanceHidden

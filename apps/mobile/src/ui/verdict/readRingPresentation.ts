@@ -1,5 +1,9 @@
+import { ethenaInk, HAIR } from '@/constants/theme.ethena';
 import { colors, safetyPalette } from '@/src/ui/tokens';
-import type { ReadRingMark } from '@/src/features/tokenVitals/readRingCatalog';
+import type {
+  ReadRingCheckId,
+  ReadRingMark,
+} from '@/src/features/tokenVitals/readRingCatalog';
 import type {
   SafetyFlagLevel,
   SafetyVerdictLevel,
@@ -9,13 +13,13 @@ import type {
 
 export const READ_RING_INK = 'rgba(255, 255, 255, 0.52)';
 
-export const READ_RING_TRACK = colors.line;
+export const READ_RING_TRACK = HAIR;
 
 /** Every colour the ring and the grid may paint. No hue outside this map. */
 export const READ_RING_PAINT = Object.freeze({
   ink: READ_RING_INK,
   track: READ_RING_TRACK,
-  info: colors.inkTertiary,
+  info: ethenaInk.tertiary,
   notRead: colors.inkQuaternary,
   warn: safetyPalette.caution,
   danger: safetyPalette.danger,
@@ -203,6 +207,7 @@ export const CHECK_GRID = Object.freeze({
   markGap: 7,
   /** The value and the second lines hang under the label, past its mark. */
   valueIndent: 18,
+  factLineMaxFontScale: 1.01,
 });
 
 /** The grid's column width at a given card inner width. */
@@ -224,6 +229,34 @@ export function resolveCheckGridRows<T>(cells: readonly T[]): (T | null)[][] {
   }
   return rows;
 }
+
+const TWO_LINE_LABEL_CHECKS: ReadonlySet<ReadRingCheckId> = new Set([
+  'snipers_insiders',
+]);
+
+export function resolveCheckLabelLines(
+  id: ReadRingCheckId,
+  label: string,
+): readonly string[] {
+  if (!TWO_LINE_LABEL_CHECKS.has(id)) return [label];
+  const middle = label.length / 2;
+  let split = -1;
+  for (let index = 0; index < label.length; index += 1) {
+    if (
+      label[index] === ' ' &&
+      (split < 0 || Math.abs(index - middle) < Math.abs(split - middle))
+    ) {
+      split = index;
+    }
+  }
+  if (split < 0) return [label];
+  return [label.slice(0, split), label.slice(split + 1)];
+}
+
+export function isCheckFactList(id: ReadRingCheckId): boolean {
+  return TWO_LINE_LABEL_CHECKS.has(id);
+}
+
 
 /** The not-run rows and the caption sit between the reason and the grid. */
 export const READ_RING_CARD = Object.freeze({

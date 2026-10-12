@@ -5,6 +5,10 @@ import type {
 } from '@/src/features/balances/computeFiatTotal';
 import { classifyHolding } from '@/src/features/balances/majors';
 import {
+  readFailLine,
+  type ReadFailState,
+} from '@/src/features/connectivity/connectivity';
+import {
   formatCents,
   type HomeBookRead,
 } from '@/src/features/home/book/homeBookPresenter';
@@ -50,7 +54,7 @@ export function presentSleeve(
     (read.holdings.quantityStatus === 'error' ||
       read.holdings.quantityStatus === 'partial')
   ) {
-    return refused(swapsOff);
+    return refused(swapsOff, read.failState);
   }
   if (
     read.status === 'loading' ||
@@ -171,11 +175,14 @@ function loading(swapsOff: boolean): SleeveModel {
   };
 }
 
-function refused(swapsOff: boolean): SleeveModel {
+function refused(
+  swapsOff: boolean,
+  failState: ReadFailState | undefined,
+): SleeveModel {
   return {
     ...frame(swapsOff, []),
     state: 'refused',
-    refusedMessage: copy.homeBook.unavailable,
+    refusedMessage: readFailLine(failState, copy.homeBook.unavailable),
     sell: { label: copy.assetDetail.sell, shown: true, disabled: true },
     findToken: { label: copy.sleeve.findToken, disabled: swapsOff },
   };
